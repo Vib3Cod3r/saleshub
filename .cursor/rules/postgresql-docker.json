@@ -1,0 +1,97 @@
+{
+  "rules": [
+    {
+      "name": "PostgreSQL Docker Requirement",
+      "description": "All PostgreSQL instances must be run using Docker containers",
+      "pattern": "**/*.{js,ts,py,go,java,php,rb}",
+      "rule": "When setting up or configuring PostgreSQL connections, always use Docker containers. Never suggest direct PostgreSQL installation on the host system."
+    },
+    {
+      "name": "Docker Compose for PostgreSQL",
+      "description": "Use docker-compose.yml for PostgreSQL service definition",
+      "pattern": "**/docker-compose.{yml,yaml}",
+      "rule": "Include PostgreSQL service with proper volume mounts, environment variables, and network configuration."
+    },
+    {
+      "name": "Connection String Format",
+      "description": "Use Docker service names in connection strings",
+      "pattern": "**/*.{env,.env.local,.env.development}",
+      "rule": "Database host should reference Docker service name (e.g., 'postgres' or 'db') instead of 'localhost' or IP addresses."
+    },
+    {
+      "name": "Volume Persistence",
+      "description": "Always configure persistent volumes for PostgreSQL data",
+      "pattern": "**/docker-compose.{yml,yaml}",
+      "rule": "PostgreSQL containers must have named volumes or bind mounts for /var/lib/postgresql/data to ensure data persistence."
+    },
+    {
+      "name": "Environment Variables",
+      "description": "Use environment variables for PostgreSQL configuration",
+      "pattern": "**/*.{env,.env.local,.env.development}",
+      "rule": "Set POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD via environment variables. Never hardcode credentials."
+    }
+  ],
+  "templates": {
+    "docker-compose.yml": {
+      "description": "Standard PostgreSQL Docker Compose setup",
+      "content": "version: '3.8'\nservices:\n  postgres:\n    image: postgres:15-alpine\n    restart: unless-stopped\n    environment:\n      POSTGRES_DB: ${POSTGRES_DB}\n      POSTGRES_USER: ${POSTGRES_USER}\n      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}\n    ports:\n      - '${POSTGRES_PORT:-5432}:5432'\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n      - ./init-scripts:/docker-entrypoint-initdb.d\n    networks:\n      - app-network\n\nvolumes:\n  postgres_data:\n\nnetworks:\n  app-network:\n    driver: bridge"
+    },
+    ".env.example": {
+      "description": "Environment variables template for PostgreSQL Docker setup",
+      "content": "# PostgreSQL Configuration\nPOSTGRES_DB=myapp\nPOSTGRES_USER=postgres\nPOSTGRES_PASSWORD=your_secure_password\nPOSTGRES_HOST=postgres\nPOSTGRES_PORT=5432\n\n# Connection URL format\nDATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+    }
+  },
+  "checks": [
+    {
+      "name": "No Direct PostgreSQL Installation",
+      "description": "Prevent suggestions for direct PostgreSQL installation",
+      "triggers": ["install postgresql", "apt-get install postgresql", "brew install postgresql", "yum install postgresql"],
+      "action": "suggest_docker_alternative",
+      "message": "Use Docker instead: 'docker run -d --name postgres -e POSTGRES_PASSWORD=password -p 5432:5432 postgres:15-alpine'"
+    },
+    {
+      "name": "Localhost Connection Warning",
+      "description": "Warn about localhost connections in Docker environments",
+      "pattern": "localhost:5432|127.0.0.1:5432",
+      "action": "warn",
+      "message": "In Docker environments, use service name 'postgres' instead of 'localhost' for database connections"
+    },
+    {
+      "name": "Missing Docker Volume",
+      "description": "Ensure PostgreSQL containers have persistent volumes",
+      "pattern": "postgres:.*",
+      "action": "check_volumes",
+      "message": "PostgreSQL containers should have persistent volumes for data storage"
+    }
+  ],
+  "auto_suggestions": [
+    {
+      "trigger": "new_project_with_postgres",
+      "suggest": [
+        "Create docker-compose.yml with PostgreSQL service",
+        "Add .env file with database configuration",
+        "Create init-scripts directory for database initialization",
+        "Add .dockerignore and .gitignore entries"
+      ]
+    },
+    {
+      "trigger": "database_migration_setup",
+      "suggest": [
+        "Use Docker exec for running migrations: 'docker-compose exec postgres psql -U $POSTGRES_USER -d $POSTGRES_DB'",
+        "Create migration scripts in ./init-scripts/ directory",
+        "Use application containers for ORM migrations"
+      ]
+    }
+  ],
+  "best_practices": [
+    "Always use specific PostgreSQL version tags (e.g., postgres:15-alpine) instead of 'latest'",
+    "Use Alpine variants for smaller image sizes",
+    "Set up proper health checks for PostgreSQL containers",
+    "Use secrets management for production environments",
+    "Configure proper backup strategies for Docker volumes",
+    "Use multi-stage builds if including PostgreSQL tools in application images",
+    "Set appropriate restart policies (unless-stopped or always)",
+    "Use Docker networks to isolate database traffic",
+    "Configure resource limits for PostgreSQL containers in production"
+  ]
+} 

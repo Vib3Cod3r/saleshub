@@ -1,454 +1,625 @@
 // Main Application Controller
-class CRMApp {
+class SalesCRMApp {
     constructor() {
-        this.currentUser = null;
         this.currentPage = 'dashboard';
+        this.currentUser = null;
         this.isAuthenticated = false;
-        
         this.init();
     }
 
-    async init() {
-        try {
-            // Show loading screen
-            this.showLoading();
-
-            // Setup modal listeners immediately (needed for login/register)
-            this.setupModalListeners();
-
-            // Check if user is authenticated
-            await this.checkAuthentication();
-
-            if (this.isAuthenticated) {
-                await this.initializeApp();
-            } else {
-                this.showLogin();
+    // Initialize the application
+    init() {
+        console.log('Initializing Sales CRM Application...');
+        
+        // Update loading message
+        this.updateLoadingMessage('Checking server connection...');
+        
+        // Check server connection first
+        this.checkServerConnection().then(() => {
+            // Check authentication status
+            this.checkAuthStatus();
+            
+            // Setup event listeners
+            this.setupEventListeners();
+            
+            // Initialize components
+            this.initializeComponents();
+            
+            console.log('Sales CRM Application initialized successfully');
+        }).catch((error) => {
+            console.error('Server connection failed:', error);
+            if (window.errorHandler) {
+                window.errorHandler.showError('Unable to connect to the server. Please check if the server is running.');
             }
-        } catch (error) {
-            console.error('App initialization failed:', error);
-            this.showError('Failed to initialize application');
-            this.showLogin();
-        } finally {
-            this.hideLoading();
-        }
+        });
     }
 
-    async checkAuthentication() {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            this.isAuthenticated = false;
-            return;
-        }
-
+    // Check server connection
+    async checkServerConnection() {
         try {
-            this.currentUser = await api.getCurrentUser();
-            this.isAuthenticated = true;
+            this.updateLoadingMessage('Connecting to server...');
+            const response = await fetch('/api/auth/me', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                timeout: 10000
+            });
+            
+            // Server is responding - this is good
+            if (response.status === 401) {
+                // 401 means server is working but no auth token - this is expected for new users
+                this.updateLoadingMessage('Server connected successfully');
+                return true;
+            } else if (!response.ok) {
+                throw new Error(`Server responded with status: ${response.status}`);
+            }
+            
+            this.updateLoadingMessage('Server connected successfully');
+            return true;
         } catch (error) {
-            console.error('Authentication check failed:', error);
-            this.isAuthenticated = false;
-            localStorage.removeItem('authToken');
+            console.error('Server connection check failed:', error);
+            throw error;
         }
     }
 
-    async initializeApp() {
-        // Hide login/register modals
-        this.hideLogin();
-        this.hideRegister();
-
-        // Show main app
-        document.getElementById('app').style.display = 'flex';
-
-        // Setup navigation
-        this.setupNavigation();
-
-        // Setup global event listeners
-        this.setupEventListeners();
-
-        // Initialize current page
-        await this.navigateToPage(this.currentPage);
-
-        // Update user profile
-        this.updateUserProfile();
-
-        // Setup periodic data refresh
-        this.setupDataRefresh();
+    // Update loading message
+    updateLoadingMessage(message) {
+        const loadingMessage = document.getElementById('loading-message');
+        const progressText = document.querySelector('.progress-text');
+        
+        if (loadingMessage) {
+            loadingMessage.textContent = message;
+        }
+        
+        if (progressText) {
+            progressText.textContent = message;
+        }
     }
 
-    setupNavigation() {
+    // Check authentication status
+    async checkAuthStatus() {
+        this.updateLoadingMessage('Checking authentication...');
+        const token = localStorage.getItem('authToken');
+        
+        if (token) {
+            try {
+                // Verify token is valid
+                const user = await api.getCurrentUser();
+                this.currentUser = user;
+                this.isAuthenticated = true;
+                this.updateLoadingMessage('Loading dashboard...');
+                this.showMainApp();
+                this.updateUserInfo();
+                this.loadDashboard();
+            } catch (error) {
+                console.error('Token validation failed:', error);
+                this.handleAuthError(error);
+                this.showLoginModal();
+            }
+        } else {
+            this.updateLoadingMessage('Please sign in...');
+            this.showLoginModal();
+        }
+    }
+
+    // Setup event listeners
+    setupEventListeners() {
+        // Login form submission
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleLogin();
+            });
+        }
+
+        // Register form submission
+        const registerForm = document.getElementById('register-form');
+        if (registerForm) {
+            registerForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleRegister();
+            });
+        }
+
+        // Modal navigation
+        const showRegisterLink = document.getElementById('show-register');
+        const showLoginLink = document.getElementById('show-login');
+        
+        if (showRegisterLink) {
+            showRegisterLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showRegisterModal();
+            });
+        }
+        
+        if (showLoginLink) {
+            showLoginLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showLoginModal();
+            });
+        }
+
+        // Navigation
         const navItems = document.querySelectorAll('.nav-item');
         navItems.forEach(item => {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
-                const page = item.dataset.page;
+                const page = item.getAttribute('data-page');
                 this.navigateToPage(page);
             });
         });
 
-        // Handle browser back/forward
-        window.addEventListener('popstate', (e) => {
-            const page = e.state?.page || 'dashboard';
-            this.navigateToPage(page, false);
-        });
-    }
-
-    setupEventListeners() {
-        // Logout button
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            this.logout();
-        });
+        // Logout
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this.handleLogout();
+            });
+        }
 
         // Global search
-        const searchInput = document.getElementById('global-search');
-        let searchTimeout;
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.performGlobalSearch(e.target.value);
-            }, 300);
-        });
+        const globalSearch = document.getElementById('global-search');
+        if (globalSearch) {
+            globalSearch.addEventListener('input', (e) => {
+                this.handleGlobalSearch(e.target.value);
+            });
+        }
 
-        // Add new buttons
-        document.getElementById('add-new-btn').addEventListener('click', () => {
-            this.showAddModal();
-        });
-
-        // Modal event listeners
-        this.setupModalListeners();
+        // Add new button
+        const addNewBtn = document.getElementById('add-new-btn');
+        if (addNewBtn) {
+            addNewBtn.addEventListener('click', () => {
+                this.handleAddNew();
+            });
+        }
     }
 
-    setupModalListeners() {
-        // Login form
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.handleLogin(e);
-        });
+    // Handle login
+    async handleLogin() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
 
-        // Register form
-        document.getElementById('register-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.handleRegister(e);
-        });
+        // Validate form
+        const errors = Auth.validateLoginForm({ email, password });
+        if (errors.length > 0) {
+            this.showError(errors.join(', '));
+            return;
+        }
 
-        // Show register modal
-        document.getElementById('show-register').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showRegister();
-        });
-
-        // Show login modal
-        document.getElementById('show-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.showLogin();
-        });
+        try {
+            this.showLoading('Signing in...');
+            
+            const response = await api.login({ email, password });
+            
+            // Store user data
+            Auth.setCurrentUser(response.user);
+            this.currentUser = response.user;
+            this.isAuthenticated = true;
+            
+            this.hideLoading();
+            this.showSuccess('Login successful!');
+            
+            // Hide login modal and show main app
+            this.hideLoginModal();
+            this.showMainApp();
+            this.updateUserInfo();
+            this.loadDashboard();
+            
+        } catch (error) {
+            this.hideLoading();
+            const errorMessage = Auth.handleAuthError(error);
+            this.showError(errorMessage);
+        }
     }
 
-    async navigateToPage(page, updateHistory = true) {
-        // Update active navigation
-        document.querySelectorAll('.nav-item').forEach(item => {
+    // Handle registration
+    async handleRegister() {
+        const formData = {
+            firstName: document.getElementById('firstName').value,
+            lastName: document.getElementById('lastName').value,
+            email: document.getElementById('regEmail').value,
+            username: document.getElementById('username').value,
+            password: document.getElementById('regPassword').value
+        };
+
+        // Validate form
+        const errors = Auth.validateRegistrationForm(formData);
+        if (errors.length > 0) {
+            this.showError(errors.join(', '));
+            return;
+        }
+
+        try {
+            this.showLoading('Creating account...');
+            
+            const response = await api.register(formData);
+            
+            // Store user data
+            Auth.setCurrentUser(response.user);
+            this.currentUser = response.user;
+            this.isAuthenticated = true;
+            
+            this.hideLoading();
+            this.showSuccess('Account created successfully!');
+            
+            // Hide register modal and show main app
+            this.hideRegisterModal();
+            this.showMainApp();
+            this.updateUserInfo();
+            this.loadDashboard();
+            
+        } catch (error) {
+            this.hideLoading();
+            const errorMessage = Auth.handleAuthError(error);
+            this.showError(errorMessage);
+        }
+    }
+
+    // Handle logout
+    async handleLogout() {
+        try {
+            await api.logout();
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            // Clear authentication data
+            Auth.clearAuth();
+            this.currentUser = null;
+            this.isAuthenticated = false;
+            
+            // Show login modal
+            this.hideMainApp();
+            this.showLoginModal();
+            this.showSuccess('Logged out successfully');
+        }
+    }
+
+    // Show login modal
+    showLoginModal() {
+        const loginModal = document.getElementById('login-modal');
+        const registerModal = document.getElementById('register-modal');
+        const loadingScreen = document.getElementById('loading-screen');
+        
+        // Hide loading screen
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
+        
+        if (loginModal) {
+            loginModal.style.display = 'flex';
+        }
+        
+        if (registerModal) registerModal.style.display = 'none';
+        
+        // Clear forms
+        this.clearForms();
+    }
+
+    // Show register modal
+    showRegisterModal() {
+        const loginModal = document.getElementById('login-modal');
+        const registerModal = document.getElementById('register-modal');
+        const loadingScreen = document.getElementById('loading-screen');
+        
+        // Hide loading screen
+        if (loadingScreen) loadingScreen.style.display = 'none';
+        
+        if (loginModal) loginModal.style.display = 'none';
+        if (registerModal) registerModal.style.display = 'flex';
+        
+        // Clear forms
+        this.clearForms();
+    }
+
+    // Hide login modal
+    hideLoginModal() {
+        const loginModal = document.getElementById('login-modal');
+        if (loginModal) loginModal.style.display = 'none';
+    }
+
+    // Hide register modal
+    hideRegisterModal() {
+        const registerModal = document.getElementById('register-modal');
+        if (registerModal) registerModal.style.display = 'none';
+    }
+
+    // Show main app
+    showMainApp() {
+        const app = document.getElementById('app');
+        const loadingScreen = document.getElementById('loading-screen');
+        
+        if (loadingScreen) loadingScreen.style.display = 'none';
+        if (app) app.style.display = 'flex';
+    }
+
+    // Hide main app
+    hideMainApp() {
+        const app = document.getElementById('app');
+        if (app) app.style.display = 'none';
+    }
+
+    // Update user information in the UI
+    updateUserInfo() {
+        if (!this.currentUser) return;
+
+        const userInitials = document.getElementById('user-initials');
+        const userName = document.getElementById('user-name');
+        const userRole = document.getElementById('user-role');
+
+        if (userInitials) {
+            userInitials.textContent = Utils.getInitials(this.currentUser.firstName, this.currentUser.lastName);
+        }
+
+        if (userName) {
+            userName.textContent = Utils.formatName(this.currentUser.firstName, this.currentUser.lastName);
+        }
+
+        if (userRole) {
+            userRole.textContent = Auth.formatUserRole(this.currentUser.role);
+        }
+    }
+
+    // Navigate to a specific page
+    navigateToPage(page) {
+        console.log('navigateToPage called with:', page);
+        
+        // Update navigation active state
+        const navItems = document.querySelectorAll('.nav-item');
+        navItems.forEach(item => {
             item.classList.remove('active');
-            if (item.dataset.page === page) {
+            if (item.getAttribute('data-page') === page) {
                 item.classList.add('active');
             }
         });
 
         // Hide all pages
-        document.querySelectorAll('.page').forEach(pageEl => {
-            pageEl.classList.remove('active');
-        });
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(p => p.classList.remove('active'));
 
-        // Show current page
-        const pageElement = document.getElementById(`${page}-page`);
-        if (pageElement) {
-            pageElement.classList.add('active');
-        }
+        // Show target page
+        const targetPage = document.getElementById(`${page}-page`);
+        console.log('Target page element:', targetPage);
+        if (targetPage) {
+            targetPage.classList.add('active');
+            this.currentPage = page;
+            
+            // Update page title
+            const pageTitle = document.getElementById('page-title');
+            if (pageTitle) {
+                pageTitle.textContent = this.getPageTitle(page);
+            }
 
-        // Update page title
-        this.updatePageTitle(page);
-
-        // Update add button text
-        this.updateAddButton(page);
-
-        // Update browser history
-        if (updateHistory) {
-            history.pushState({ page }, '', `#${page}`);
-        }
-
-        this.currentPage = page;
-
-        // Initialize page content
-        await this.initializePage(page);
-    }
-
-    async initializePage(page) {
-        switch (page) {
-            case 'dashboard':
-                if (window.dashboard) {
-                    await window.dashboard.initialize();
-                }
-                break;
-            case 'contacts':
-                if (window.contacts) {
-                    await window.contacts.initialize();
-                }
-                break;
-            case 'deals':
-                if (window.deals) {
-                    await window.deals.initialize();
-                }
-                break;
-            case 'tasks':
-                if (window.tasks) {
-                    await window.tasks.initialize();
-                }
-                break;
-            case 'pipeline':
-                if (window.pipeline) {
-                    await window.pipeline.initialize();
-                }
-                break;
-            case 'communications':
-                if (window.communications) {
-                    await window.communications.initialize();
-                }
-                break;
-            case 'settings':
-                // Initialize settings page
-                break;
+            // Load page-specific content
+            console.log('Loading page content for:', page);
+            this.loadPageContent(page);
+        } else {
+            console.error(`Target page '${page}-page' not found`);
         }
     }
 
-    updatePageTitle(page) {
+    // Get page title
+    getPageTitle(page) {
         const titles = {
             dashboard: 'Dashboard',
-            contacts: 'Contacts & Leads',
             deals: 'Deals',
+            contacts: 'Contacts',
             tasks: 'Tasks',
-            pipeline: 'Sales Pipeline',
+            pipeline: 'Pipeline',
             communications: 'Communications',
             settings: 'Settings'
         };
-
-        document.getElementById('page-title').textContent = titles[page] || 'Dashboard';
+        return titles[page] || 'Dashboard';
     }
 
-    updateAddButton(page) {
-        const button = document.getElementById('add-new-btn');
-        const span = button.querySelector('span');
-        
-        const buttonTexts = {
-            dashboard: 'Add New Deal',
-            contacts: 'Add New Contact',
-            deals: 'Add New Deal',
-            tasks: 'Add New Task',
-            pipeline: 'Add New Deal',
-            communications: 'Log Communication',
-            settings: 'Add New'
-        };
-
-        span.textContent = buttonTexts[page] || 'Add New';
-    }
-
-    showAddModal() {
-        switch (this.currentPage) {
+    // Load page-specific content
+    loadPageContent(page) {
+        switch (page) {
+            case 'dashboard':
+                this.loadDashboard();
+                break;
             case 'contacts':
-                if (window.contacts) {
-                    window.contacts.showAddModal();
-                }
+                this.loadContacts();
                 break;
             case 'deals':
-            case 'dashboard':
-            case 'pipeline':
-                if (window.deals) {
-                    window.deals.showAddModal();
-                }
+                this.loadDeals();
                 break;
             case 'tasks':
-                if (window.tasks) {
-                    window.tasks.showAddModal();
-                }
+                this.loadTasks();
+                break;
+            case 'pipeline':
+                this.loadPipeline();
                 break;
             case 'communications':
-                if (window.communications) {
-                    window.communications.showAddModal();
-                }
+                this.loadCommunications();
+                break;
+            case 'settings':
+                this.loadSettings();
                 break;
         }
     }
 
-    async handleLogin(e) {
-        const formData = new FormData(e.target);
-        const credentials = {
-            email: formData.get('email'),
-            password: formData.get('password')
-        };
-
+    // Load dashboard
+    async loadDashboard() {
         try {
-            this.showFormLoading(e.target);
-            const response = await api.login(credentials);
-            this.currentUser = response.user;
-            this.isAuthenticated = true;
-            
-            this.showSuccess('Login successful! Welcome back.');
-            await this.initializeApp();
-        } catch (error) {
-            console.error('Login failed:', error);
-            this.showError(error.message || 'Login failed. Please try again.');
-        } finally {
-            this.hideFormLoading(e.target);
-        }
-    }
-
-    async handleRegister(e) {
-        const formData = new FormData(e.target);
-        const userData = {
-            firstName: formData.get('firstName'),
-            lastName: formData.get('lastName'),
-            email: formData.get('email'),
-            username: formData.get('username'),
-            password: formData.get('password')
-        };
-
-        try {
-            this.showFormLoading(e.target);
-            const response = await api.register(userData);
-            this.currentUser = response.user;
-            this.isAuthenticated = true;
-            
-            this.showSuccess('Account created successfully! Welcome to Sales CRM.');
-            await this.initializeApp();
-        } catch (error) {
-            console.error('Registration failed:', error);
-            this.showError(error.message || 'Registration failed. Please try again.');
-        } finally {
-            this.hideFormLoading(e.target);
-        }
-    }
-
-    async logout() {
-        try {
-            await api.logout();
-            this.showSuccess('Logged out successfully.');
-        } catch (error) {
-            console.error('Logout error:', error);
-        } finally {
-            this.currentUser = null;
-            this.isAuthenticated = false;
-            document.getElementById('app').style.display = 'none';
-            this.showLogin();
-        }
-    }
-
-    updateUserProfile() {
-        if (!this.currentUser) return;
-
-        const initials = `${this.currentUser.firstName.charAt(0)}${this.currentUser.lastName.charAt(0)}`.toUpperCase();
-        const fullName = `${this.currentUser.firstName} ${this.currentUser.lastName}`;
-        const role = this.formatRole(this.currentUser.role);
-
-        document.getElementById('user-initials').textContent = initials;
-        document.getElementById('user-name').textContent = fullName;
-        document.getElementById('user-role').textContent = role;
-    }
-
-    formatRole(role) {
-        const roleMap = {
-            'ADMIN': 'Administrator',
-            'SALES_MANAGER': 'Sales Manager',
-            'SALES_REP': 'Sales Representative'
-        };
-        return roleMap[role] || role;
-    }
-
-    async performGlobalSearch(query) {
-        if (!query.trim()) return;
-
-        try {
-            // Implement global search across all entities
-            console.log('Performing global search for:', query);
-            // This would search across contacts, deals, tasks, etc.
-        } catch (error) {
-            console.error('Global search failed:', error);
-        }
-    }
-
-    setupDataRefresh() {
-        // Refresh data every 5 minutes
-        setInterval(() => {
-            if (this.isAuthenticated && document.visibilityState === 'visible') {
-                this.refreshCurrentPageData();
+            // This will be handled by dashboard.js
+            if (window.Dashboard) {
+                window.Dashboard.loadDashboard();
             }
-        }, 5 * 60 * 1000);
-
-        // Refresh when tab becomes visible
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && this.isAuthenticated) {
-                this.refreshCurrentPageData();
-            }
-        });
-    }
-
-    async refreshCurrentPageData() {
-        try {
-            await this.initializePage(this.currentPage);
         } catch (error) {
-            console.error('Data refresh failed:', error);
+            this.showError('Failed to load dashboard: ' + error.message);
         }
     }
 
-    // UI Helper Methods
-    showLoading() {
-        document.getElementById('loading-screen').style.display = 'flex';
+    // Load contacts
+    async loadContacts() {
+        try {
+            if (window.contacts) {
+                await window.contacts.initialize();
+            }
+        } catch (error) {
+            this.showError('Failed to load contacts: ' + error.message);
+        }
     }
 
+    // Load deals
+    async loadDeals() {
+        try {
+            if (window.Deals) {
+                window.Deals.loadDeals();
+            }
+        } catch (error) {
+            this.showError('Failed to load deals: ' + error.message);
+        }
+    }
+
+    // Load tasks
+    async loadTasks() {
+        try {
+            if (window.Tasks) {
+                window.Tasks.loadTasks();
+            }
+        } catch (error) {
+            this.showError('Failed to load tasks: ' + error.message);
+        }
+    }
+
+    // Load pipeline
+    async loadPipeline() {
+        try {
+            if (window.Pipeline) {
+                window.Pipeline.loadPipeline();
+            }
+        } catch (error) {
+            this.showError('Failed to load pipeline: ' + error.message);
+        }
+    }
+
+    // Load communications
+    async loadCommunications() {
+        try {
+            if (window.Communications) {
+                window.Communications.loadCommunications();
+            }
+        } catch (error) {
+            this.showError('Failed to load communications: ' + error.message);
+        }
+    }
+
+    // Load settings
+    async loadSettings() {
+        try {
+            // Settings page implementation
+            console.log('Loading settings...');
+        } catch (error) {
+            this.showError('Failed to load settings: ' + error.message);
+        }
+    }
+
+    // Handle global search
+    handleGlobalSearch(query) {
+        if (query.length < 2) return;
+        
+        // Implement global search functionality
+        console.log('Global search:', query);
+    }
+
+    // Handle add new button
+    handleAddNew() {
+        switch (this.currentPage) {
+            case 'deals':
+                this.showAddDealModal();
+                break;
+            case 'contacts':
+                this.showAddContactModal();
+                break;
+            case 'tasks':
+                this.showAddTaskModal();
+                break;
+            default:
+                this.showAddDealModal();
+        }
+    }
+
+    // Show add deal modal
+    showAddDealModal() {
+        if (window.Deals) {
+            window.Deals.showAddDealModal();
+        }
+    }
+
+    // Show add contact modal
+    showAddContactModal() {
+        if (window.contacts) {
+            window.contacts.showCreateModal();
+        }
+    }
+
+    // Show add task modal
+    showAddTaskModal() {
+        if (window.Tasks) {
+            window.Tasks.showAddTaskModal();
+        }
+    }
+
+    // Clear forms
+    clearForms() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => form.reset());
+    }
+
+    // Show loading
+    showLoading(message = 'Loading...') {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            const loaderText = loadingScreen.querySelector('p');
+            if (loaderText) loaderText.textContent = message;
+            loadingScreen.style.display = 'flex';
+        }
+    }
+
+    // Hide loading
     hideLoading() {
-        document.getElementById('loading-screen').style.display = 'none';
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.style.display = 'none';
+        }
     }
 
-    showLogin() {
-        document.getElementById('login-modal').style.display = 'flex';
-        document.getElementById('register-modal').style.display = 'none';
+    // Show success message
+    showSuccess(message) {
+        this.showNotification(message, 'success');
     }
 
-    hideLogin() {
-        document.getElementById('login-modal').style.display = 'none';
+    // Show error message
+    showError(message) {
+        this.showNotification(message, 'error');
     }
 
-    showRegister() {
-        document.getElementById('register-modal').style.display = 'flex';
-        document.getElementById('login-modal').style.display = 'none';
+    // Show warning message
+    showWarning(message) {
+        this.showNotification(message, 'warning');
     }
 
-    hideRegister() {
-        document.getElementById('register-modal').style.display = 'none';
-    }
-
-    showFormLoading(form) {
-        const button = form.querySelector('button[type="submit"]');
-        button.disabled = true;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-    }
-
-    hideFormLoading(form) {
-        const button = form.querySelector('button[type="submit"]');
-        button.disabled = false;
-        const originalTexts = {
-            'login-form': 'Sign In',
-            'register-form': 'Create Account'
-        };
-        button.textContent = originalTexts[form.id] || 'Submit';
-    }
-
+    // Show notification
     showNotification(message, type = 'info') {
-        const container = document.getElementById('notification-container');
+        const notificationContainer = document.getElementById('notification-container');
+        if (!notificationContainer) return;
+
         const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
+        notification.className = `notification notification-${type}`;
         notification.innerHTML = `
             <div class="notification-content">
-                <p>${message}</p>
+                <i class="fas fa-${this.getNotificationIcon(type)}"></i>
+                <span>${message}</span>
             </div>
+            <button class="notification-close">
+                <i class="fas fa-times"></i>
+            </button>
         `;
 
-        container.appendChild(notification);
+        notificationContainer.appendChild(notification);
 
         // Auto remove after 5 seconds
         setTimeout(() => {
@@ -457,32 +628,59 @@ class CRMApp {
             }
         }, 5000);
 
-        // Allow manual dismissal
-        notification.addEventListener('click', () => {
+        // Close button functionality
+        const closeBtn = notification.querySelector('.notification-close');
+        closeBtn.addEventListener('click', () => {
             if (notification.parentNode) {
                 notification.parentNode.removeChild(notification);
             }
         });
     }
 
-    showSuccess(message) {
-        this.showNotification(message, 'success');
+    // Get notification icon
+    getNotificationIcon(type) {
+        const icons = {
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            warning: 'exclamation-triangle',
+            info: 'info-circle'
+        };
+        return icons[type] || 'info-circle';
     }
 
-    showError(message) {
-        this.showNotification(message, 'error');
+    // Handle authentication errors
+    handleAuthError(error) {
+        console.error('Authentication error:', error);
+        Auth.clearAuth();
+        this.currentUser = null;
+        this.isAuthenticated = false;
+        this.showError('Authentication failed. Please log in again.');
+        this.showLoginModal();
     }
 
-    showWarning(message) {
-        this.showNotification(message, 'warning');
-    }
+    // Initialize components
+    initializeComponents() {
+        // Initialize Auth system
+        if (window.Auth) {
+            window.Auth.init();
+        }
 
-    showInfo(message) {
-        this.showNotification(message, 'info');
+        // Initialize contacts component
+        if (window.contacts) {
+            console.log('Initializing contacts component...');
+            window.contacts.initialize();
+        }
+
+        // Initialize other components as needed
+        console.log('Components initialized');
     }
 }
 
-// Initialize app when DOM is loaded
+// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new CRMApp();
+    console.log('DOM loaded, initializing Sales CRM App...');
+    window.app = new SalesCRMApp();
 });
+
+// Make app globally available
+window.SalesCRMApp = SalesCRMApp;

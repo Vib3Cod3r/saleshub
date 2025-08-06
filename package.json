@@ -33,6 +33,9 @@
     "lead-management",
     "contact-management"
   ],
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "author": "Sales CRM Team",
   "license": "MIT"
 }

@@ -54,6 +54,11 @@ class APIClient {
                 window.location.reload();
             }
             
+            // Use error handler if available
+            if (window.errorHandler) {
+                window.errorHandler.handleAPIError(error);
+            }
+            
             throw error;
         }
     }
@@ -127,6 +132,10 @@ class APIClient {
 
     async getCurrentUser() {
         return this.get('/auth/me');
+    }
+
+    async getUsers() {
+        return this.get('/auth/users');
     }
 
     // Dashboard endpoints

@@ -163,4 +163,34 @@ router.post('/logout', authenticateToken, (req, res) => {
   res.json({ message: 'Logout successful' });
 });
 
+// Get all users for assignment (admin/manager only)
+router.get('/users', authenticateToken, async (req, res) => {
+  try {
+    // Only allow admin and sales managers to get user list
+    if (req.user.role !== 'ADMIN' && req.user.role !== 'SALES_MANAGER') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const users = await prisma.user.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true
+      },
+      orderBy: [
+        { firstName: 'asc' },
+        { lastName: 'asc' }
+      ]
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 module.exports = { router, authenticateToken };

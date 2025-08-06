@@ -15,7 +15,13 @@
     <div id="loading-screen" class="loading-screen">
         <div class="loader">
             <div class="spinner"></div>
-            <p>Loading Sales CRM...</p>
+            <p id="loading-message">Loading Sales CRM...</p>
+            <div class="loading-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <p class="progress-text">Initializing application...</p>
+            </div>
         </div>
     </div>
 
@@ -299,17 +305,192 @@
 
                 <!-- Other Pages (Contacts, Deals, Tasks, etc.) -->
                 <div id="contacts-page" class="page">
-                    <div class="page-header">
-                        <h2>Contacts & Leads</h2>
-                        <button class="btn btn-primary" id="add-contact-btn">
-                            <i class="fas fa-plus"></i>
-                            Add Contact
-                        </button>
+                    <!-- Contacts Header -->
+                    <div class="contacts-header">
+                        <div class="contacts-header-left">
+                            <div class="contacts-title">
+                                <h1>Contacts</h1>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="contacts-count">4 records</div>
+                        </div>
+                        
+                        <div class="contacts-header-center">
+                            <div class="contacts-tabs">
+                                <button class="tab-btn active" data-tab="all">All contacts</button>
+                                <button class="tab-btn" data-tab="my">My contacts</button>
+                                <button class="tab-btn" data-tab="unassigned">Unassigned contacts</button>
+                            </div>
+                            <div class="view-actions">
+                                <button class="btn btn-secondary btn-sm">
+                                    <i class="fas fa-plus"></i>
+                                    Add view (3/5)
+                                </button>
+                                <button class="btn btn-secondary btn-sm">All Views</button>
+                            </div>
+                        </div>
+                        
+                        <div class="contacts-header-right">
+                            <button class="btn btn-secondary btn-sm">
+                                <i class="fas fa-lock"></i>
+                                Data Quality
+                            </button>
+                            <div class="dropdown">
+                                <button class="btn btn-secondary btn-sm dropdown-toggle">
+                                    Actions
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <button class="btn btn-secondary btn-sm">Import</button>
+                            <button class="btn btn-primary btn-sm" id="create-contact-btn">
+                                <i class="fas fa-plus"></i>
+                                Create contact
+                            </button>
+                        </div>
                     </div>
-                    <div class="contacts-content">
-                        <!-- Contacts table and filters will go here -->
-                        <div id="contacts-table-container">
-                            <!-- Table will be populated by JavaScript -->
+
+                    <!-- Search and Filters -->
+                    <div class="contacts-filters">
+                        <div class="search-container">
+                            <i class="fas fa-search"></i>
+                            <input type="text" placeholder="Search name, phone, email" id="contacts-search">
+                        </div>
+                        
+                        <div class="filter-row">
+                            <div class="filter-dropdown">
+                                <button class="filter-btn">
+                                    Contact owner
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="filter-dropdown">
+                                <button class="filter-btn">
+                                    Create date
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="filter-dropdown">
+                                <button class="filter-btn">
+                                    Last activity date
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="filter-dropdown">
+                                <button class="filter-btn">
+                                    Lead status
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="filter-dropdown">
+                                <button class="filter-btn">
+                                    + More
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                            <div class="filter-dropdown">
+                                <button class="filter-btn">
+                                    Advanced filters
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contacts Table -->
+                    <div class="contacts-table-container">
+                        <div class="table-actions">
+                            <div class="table-actions-left">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="select-all-contacts">
+                                    <span class="checkmark"></span>
+                                </label>
+                            </div>
+                            <div class="table-actions-right">
+                                <button class="btn btn-secondary btn-sm">Export</button>
+                                <button class="btn btn-secondary btn-sm">Edit columns</button>
+                            </div>
+                        </div>
+                        
+                        <div class="contacts-table-wrapper">
+                            <table class="contacts-table" id="contacts-table">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-column">
+                                            <label class="checkbox-container">
+                                                <input type="checkbox" id="select-all-contacts-header">
+                                                <span class="checkmark"></span>
+                                            </label>
+                                        </th>
+                                        <th class="sortable">
+                                            NAME
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                        <th class="sortable">
+                                            EMAIL
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                        <th class="sortable">
+                                            PHONE NUMBER
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                        <th class="sortable">
+                                            CONTACT OWNER
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                        <th class="sortable">
+                                            PRIMARY COMPANY
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                        <th class="sortable">
+                                            LAST ACTIVITY DATE (GMT+8)
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                        <th class="sortable">
+                                            LEAD STATUS
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                        <th class="sortable">
+                                            CREATE DATE (GMT+8)
+                                            <i class="fas fa-sort"></i>
+                                            <i class="fas fa-ellipsis-v column-menu"></i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="contacts-table-body">
+                                    <!-- Contacts will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Pagination -->
+                        <div class="contacts-pagination">
+                            <div class="pagination-info">
+                                Showing 1-4 of 4 records
+                            </div>
+                            <div class="pagination-controls">
+                                <button class="pagination-btn" disabled>
+                                    <i class="fas fa-chevron-left"></i>
+                                    Prev
+                                </button>
+                                <button class="pagination-btn active">1</button>
+                                <button class="pagination-btn" disabled>
+                                    Next
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                                <div class="pagination-dropdown">
+                                    <button class="pagination-btn">
+                                        25 per page
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -411,15 +592,16 @@
     <div id="notification-container"></div>
 
     <!-- JavaScript -->
+    <script src="js/error-handler.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/contacts.js"></script>
     <script src="js/deals.js"></script>
     <script src="js/tasks.js"></script>
     <script src="js/pipeline.js"></script>
     <script src="js/communications.js"></script>
-    <script src="js/utils.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
