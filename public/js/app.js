@@ -81,6 +81,7 @@ class SalesCRMApp {
     async checkAuthStatus() {
         this.updateLoadingMessage('Checking authentication...');
         const token = localStorage.getItem('authToken');
+        console.log('Token:', token);
         
         if (token) {
             try {

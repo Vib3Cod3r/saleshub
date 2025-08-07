@@ -745,7 +745,9 @@ class Contacts {
         
         // Get the original contacts page HTML from the server or recreate it
         const pageContent = document.querySelector('.page-content');
+        console.log('Page content element found:', pageContent);
         if (pageContent) {
+            console.log('Restoring contacts page HTML...');
             // Restore the original contacts page structure
             pageContent.innerHTML = `
                 <!-- Contacts Page -->
@@ -894,8 +896,12 @@ class Contacts {
                 </div>
             `;
             
+            console.log('Contacts page HTML restored, reinitializing...');
             // Reinitialize the contacts functionality
             this.initialize();
+            console.log('Contacts page loaded successfully!');
+        } else {
+            console.error('Page content element not found!');
         }
     }
 
@@ -993,7 +999,12 @@ class Contacts {
                                 </div>
                                 <div class="detail-item">
                                     <label>Lead status:</label>
-                                    <span>${contact.leadStatus || 'Open'}</span>
+                                    <div class="editable-field" data-field="leadStatus" data-contact-id="${contact.id}">
+                                        <span class="field-value">${contact.leadStatus || 'Open'}</span>
+                                        <button class="edit-field-btn" title="Edit lead status">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="detail-item">
                                     <label>Create date:</label>
@@ -1068,11 +1079,7 @@ class Contacts {
                                         <a href="#" class="filter-link">Filter by: 5 activities</a>
                                     </div>
                                     <div class="activities-content">
-                                        <div class="no-activities">
-                                            <i class="fas fa-search"></i>
-                                            <p>No activities</p>
-                                        </div>
-                                        <button class="time-filter-btn">All time so far</button>
+                                        ${this.getRecentActivitiesHTML()}
                                     </div>
                                 </div>
                                 
@@ -1240,9 +1247,177 @@ class Contacts {
                             
                             <!-- Activities Tab -->
                             <div class="tab-pane" id="activities">
-                                <div class="tab-placeholder">
-                                    <h3>Activities</h3>
-                                    <p>Activity tracking and history will be displayed here.</p>
+                                <!-- Activity Search and Filters -->
+                                <div class="content-section">
+                                    <div class="section-header">
+                                        <h3>Activity Search</h3>
+                                    </div>
+                                    <div class="activities-search">
+                                        <input type="text" placeholder="Search activities" class="search-input">
+                                        <i class="fas fa-search"></i>
+                                    </div>
+                                    <div class="activities-filter">
+                                        <a href="#" class="filter-link">Filter by: All activities</a>
+                                    </div>
+                                </div>
+                                
+                                <!-- Activity Timeline -->
+                                <div class="content-section">
+                                    <div class="section-header">
+                                        <h3>Activity Timeline</h3>
+                                        <div class="section-actions">
+                                            <button class="add-btn">+ Add activity</button>
+                                            <button class="gear-btn"><i class="fas fa-cog"></i></button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="activity-timeline">
+                                        <!-- Today -->
+                                        <div class="timeline-group">
+                                            <div class="timeline-date">Today</div>
+                                            
+                                            <!-- Note Activity -->
+                                            <div class="activity-item">
+                                                <div class="activity-icon note">
+                                                    <i class="fas fa-sticky-note"></i>
+                                                </div>
+                                                <div class="activity-content">
+                                                    <div class="activity-header">
+                                                        <span class="activity-type">Note</span>
+                                                        <span class="activity-time">2 hours ago</span>
+                                                    </div>
+                                                    <div class="activity-body">
+                                                        <p>Followed up with the client regarding their requirements. They seem interested in our premium package.</p>
+                                                    </div>
+                                                    <div class="activity-footer">
+                                                        <span class="activity-owner">Created by John Doe</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Email Activity -->
+                                            <div class="activity-item">
+                                                <div class="activity-icon email">
+                                                    <i class="fas fa-envelope"></i>
+                                                </div>
+                                                <div class="activity-content">
+                                                    <div class="activity-header">
+                                                        <span class="activity-type">Email</span>
+                                                        <span class="activity-time">4 hours ago</span>
+                                                    </div>
+                                                    <div class="activity-body">
+                                                        <p>Sent proposal email with pricing details and next steps.</p>
+                                                    </div>
+                                                    <div class="activity-footer">
+                                                        <span class="activity-owner">Sent by John Doe</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Yesterday -->
+                                        <div class="timeline-group">
+                                            <div class="timeline-date">Yesterday</div>
+                                            
+                                            <!-- Call Activity -->
+                                            <div class="activity-item">
+                                                <div class="activity-icon call">
+                                                    <i class="fas fa-phone"></i>
+                                                </div>
+                                                <div class="activity-content">
+                                                    <div class="activity-header">
+                                                        <span class="activity-type">Call</span>
+                                                        <span class="activity-time">1 day ago</span>
+                                                    </div>
+                                                    <div class="activity-body">
+                                                        <p>Initial discovery call. Discussed their business needs and current challenges.</p>
+                                                        <div class="call-details">
+                                                            <span class="call-duration">Duration: 25 minutes</span>
+                                                            <span class="call-status">Completed</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="activity-footer">
+                                                        <span class="activity-owner">Called by John Doe</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Task Activity -->
+                                            <div class="activity-item">
+                                                <div class="activity-icon task">
+                                                    <i class="fas fa-tasks"></i>
+                                                </div>
+                                                <div class="activity-content">
+                                                    <div class="activity-header">
+                                                        <span class="activity-type">Task</span>
+                                                        <span class="activity-time">1 day ago</span>
+                                                    </div>
+                                                    <div class="activity-body">
+                                                        <p>Prepare proposal document with custom pricing</p>
+                                                        <div class="task-details">
+                                                            <span class="task-status completed">Completed</span>
+                                                            <span class="task-due">Due: Yesterday</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="activity-footer">
+                                                        <span class="activity-owner">Assigned to John Doe</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- This Week -->
+                                        <div class="timeline-group">
+                                            <div class="timeline-date">This Week</div>
+                                            
+                                            <!-- Meeting Activity -->
+                                            <div class="activity-item">
+                                                <div class="activity-icon meeting">
+                                                    <i class="fas fa-calendar"></i>
+                                                </div>
+                                                <div class="activity-content">
+                                                    <div class="activity-header">
+                                                        <span class="activity-type">Meeting</span>
+                                                        <span class="activity-time">3 days ago</span>
+                                                    </div>
+                                                    <div class="activity-body">
+                                                        <p>Product demo meeting with technical team</p>
+                                                        <div class="meeting-details">
+                                                            <span class="meeting-duration">Duration: 45 minutes</span>
+                                                            <span class="meeting-status">Completed</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="activity-footer">
+                                                        <span class="activity-owner">Scheduled by John Doe</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Email Activity -->
+                                            <div class="activity-item">
+                                                <div class="activity-icon email">
+                                                    <i class="fas fa-envelope"></i>
+                                                </div>
+                                                <div class="activity-content">
+                                                    <div class="activity-header">
+                                                        <span class="activity-type">Email</span>
+                                                        <span class="activity-time">4 days ago</span>
+                                                    </div>
+                                                    <div class="activity-body">
+                                                        <p>Sent welcome email and onboarding materials</p>
+                                                    </div>
+                                                    <div class="activity-footer">
+                                                        <span class="activity-owner">Sent by John Doe</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Load More Activities -->
+                                    <div class="load-more-activities">
+                                        <button class="btn btn-secondary">Load more activities</button>
+                                    </div>
                                 </div>
                             </div>
                             
@@ -1387,7 +1562,11 @@ class Contacts {
         actionButtons.forEach(button => {
             button.addEventListener('click', (e) => {
                 const action = e.currentTarget.title;
-                this.showSuccess(`${action} action clicked for ${contact.firstName} ${contact.lastName}`);
+                if (action === 'Note') {
+                    this.showNoteDialog(contact);
+                } else {
+                    this.showSuccess(`${action} action clicked for ${contact.firstName} ${contact.lastName}`);
+                }
             });
         });
         
@@ -1411,14 +1590,8 @@ class Contacts {
             backToContactsBtn.addEventListener('click', (e) => {
                 console.log('Back button clicked!');
                 e.preventDefault();
-                if (window.app && window.app.navigateToPage) {
-                    console.log('Navigating to contacts page...');
-                    window.app.navigateToPage('contacts');
-                } else {
-                    console.error('App or navigateToPage method not found');
-                    // Fallback: reload the contacts page content
-                    this.loadContactsPage();
-                }
+                console.log('Loading contacts page directly...');
+                this.loadContactsPage();
             });
             console.log('Back button event listener added');
         } else {
@@ -1430,16 +1603,16 @@ class Contacts {
             if (e.target.closest('#back-to-contacts-btn')) {
                 console.log('Back button clicked via document listener!');
                 e.preventDefault();
-                if (window.app && window.app.navigateToPage) {
-                    console.log('Navigating to contacts page via document listener...');
-                    window.app.navigateToPage('contacts');
-                } else {
-                    console.error('App or navigateToPage method not found in document listener');
-                    // Fallback: reload the contacts page content
-                    this.loadContactsPage();
-                }
+                console.log('Loading contacts page via document listener...');
+                this.loadContactsPage();
             }
         });
+
+        // Make all note activities clickable and editable
+        this.setupNoteActivitiesListeners(contact);
+        
+        // Setup editable fields
+        this.setupEditableFields(contact);
     }
 
     async showEditContactModal(contact) {
@@ -1479,6 +1652,976 @@ class Contacts {
                 this.showError('Failed to delete contact');
             }
         });
+    }
+
+    setupEditableFields(contact) {
+        const editableFields = document.querySelectorAll('.editable-field');
+        editableFields.forEach(field => {
+            const editBtn = field.querySelector('.edit-field-btn');
+            if (editBtn) {
+                editBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const fieldType = field.dataset.field;
+                    const contactId = field.dataset.contactId;
+                    
+                    if (fieldType === 'leadStatus') {
+                        this.showLeadStatusDialog(contact, field);
+                    }
+                });
+            }
+        });
+    }
+
+    showLeadStatusDialog(contact, fieldElement) {
+        const currentStatus = contact.leadStatus || 'Open';
+        const statusOptions = [
+            'Open',
+            'New',
+            'Contacted',
+            'Qualified',
+            'Unqualified',
+            'Converted',
+            'Lost'
+        ];
+
+        const dialogContent = `
+            <div class="lead-status-dialog">
+                <div class="dialog-header">
+                    <h3>Edit Lead Status</h3>
+                    <button class="btn btn-icon close-dialog-btn" title="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="dialog-content">
+                    <div class="form-group">
+                        <label for="lead-status-select">Lead Status:</label>
+                        <select id="lead-status-select" class="form-control">
+                            ${statusOptions.map(status => 
+                                `<option value="${status}" ${status === currentStatus ? 'selected' : ''}>${status}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </div>
+                <div class="dialog-footer">
+                    <button class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button class="btn btn-primary save-btn">Save</button>
+                </div>
+            </div>
+        `;
+
+        const dialog = document.createElement('div');
+        dialog.className = 'dialog-overlay';
+        dialog.innerHTML = dialogContent;
+        document.body.appendChild(dialog);
+
+        // Event listeners
+        const closeBtn = dialog.querySelector('.close-dialog-btn');
+        const cancelBtn = dialog.querySelector('.cancel-btn');
+        const saveBtn = dialog.querySelector('.save-btn');
+        const statusSelect = dialog.querySelector('#lead-status-select');
+
+        const closeDialog = () => {
+            dialog.remove();
+        };
+
+        closeBtn.addEventListener('click', closeDialog);
+        cancelBtn.addEventListener('click', closeDialog);
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                closeDialog();
+            }
+        });
+
+        saveBtn.addEventListener('click', async () => {
+            const newStatus = statusSelect.value;
+            try {
+                // Update the contact object
+                contact.leadStatus = newStatus;
+                
+                // Update the display
+                const fieldValue = fieldElement.querySelector('.field-value');
+                if (fieldValue) {
+                    fieldValue.textContent = newStatus;
+                }
+                
+                // In a real application, you would save to the database here
+                // await this.updateContactLeadStatus(contact.id, newStatus);
+                
+                this.showSuccess('Lead status updated successfully!');
+                closeDialog();
+            } catch (error) {
+                console.error('Error updating lead status:', error);
+                this.showError('Failed to update lead status');
+            }
+        });
+
+        // Focus on the select element
+        setTimeout(() => {
+            if (statusSelect) {
+                statusSelect.focus();
+            }
+        }, 100);
+    }
+
+    showNoteDialog(contact) {
+        // Get existing notes for this contact
+        const existingNotes = this.getExistingNotes(contact);
+        
+        const noteContent = `
+            <div class="note-dialog">
+                <div class="note-header">
+                    <div class="note-title">
+                        <h3>Notes</h3>
+                        <span class="note-subtitle">For ${contact.firstName} ${contact.lastName}</span>
+                    </div>
+                    <div class="note-actions">
+                        <button class="btn btn-icon" title="Close" id="close-note-dialog">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="note-content">
+                    <!-- Previous Notes Display -->
+                    <div class="previous-notes">
+                        <h4>Previous Notes</h4>
+                        <div class="notes-list">
+                            ${existingNotes.length > 0 ? existingNotes.map(note => `
+                                <div class="note-item" data-note-id="${note.id}">
+                                    <div class="note-item-header">
+                                        <div class="note-item-info">
+                                            <span class="note-owner">${note.owner}</span>
+                                            <span class="note-timestamp">${this.formatDateTime(note.timestamp)}</span>
+                                        </div>
+                                        <div class="note-item-actions">
+                                            <button class="btn btn-icon edit-note-btn" title="Edit" data-note-id="${note.id}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-icon delete-note-btn" title="Delete" data-note-id="${note.id}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="note-item-content">
+                                        <p>${note.content}</p>
+                                    </div>
+                                </div>
+                            `).join('') : '<div class="no-notes">No previous notes</div>'}
+                        </div>
+                    </div>
+                    
+                    <!-- New Note Section -->
+                    <div class="new-note-section">
+                        <h4>Add New Note</h4>
+                        <div class="note-textarea-container">
+                            <textarea 
+                                id="note-content" 
+                                placeholder="Start typing to leave a note..." 
+                                rows="4"
+                                class="note-textarea"
+                            ></textarea>
+                        </div>
+                        
+                        <div class="note-formatting">
+                            <div class="formatting-buttons">
+                                <button class="btn btn-icon" title="Bold">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Italic">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Underline">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-icon dropdown-toggle" title="More">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-link"></i> Link
+                                        </a>
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-image"></i> Image
+                                        </a>
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-table"></i> Table
+                                        </a>
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-paperclip"></i> Attachment
+                                        </a>
+                                    </div>
+                                </div>
+                                <button class="btn btn-icon" title="Bullet List">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Numbered List">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="note-options">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="create-todo">
+                                <span class="checkmark"></span>
+                                Create a To-do task to follow up In 3 business days (Monday)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="note-footer">
+                    <div class="note-footer-content">
+                        <div class="note-footer-left"></div>
+                        <div class="note-footer-right">
+                            <button class="btn btn-primary" id="create-note-btn">
+                                Create note
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Create the note dialog as an overlay
+        const noteDialog = document.createElement('div');
+        noteDialog.className = 'note-dialog-overlay';
+        noteDialog.innerHTML = noteContent;
+        document.body.appendChild(noteDialog);
+
+        // Add event listeners
+        const createNoteBtn = noteDialog.querySelector('#create-note-btn');
+        const noteTextarea = noteDialog.querySelector('#note-content');
+        const closeBtn = noteDialog.querySelector('#close-note-dialog');
+
+        // Add error handling for missing elements
+        if (!createNoteBtn || !noteTextarea || !closeBtn) {
+            console.error('Required note dialog elements not found:', {
+                createNoteBtn: !!createNoteBtn,
+                noteTextarea: !!noteTextarea,
+                closeBtn: !!closeBtn
+            });
+            return;
+        }
+
+        // Setup edit and delete buttons for existing notes
+        this.setupNoteItemActions(noteDialog, contact);
+
+        createNoteBtn.addEventListener('click', async () => {
+            const noteContent = noteTextarea.value.trim();
+            if (!noteContent) {
+                this.showError('Please enter note content');
+                return;
+            }
+
+            try {
+                // Create the note activity
+                const noteActivity = {
+                    id: Date.now(), // Simple ID generation
+                    type: 'Note',
+                    content: noteContent,
+                    timestamp: new Date(),
+                    owner: 'John Doe',
+                    timeAgo: 'Just now'
+                };
+
+                // Add the note to the activities timeline
+                this.addNoteToActivities(noteActivity, contact);
+                
+                // Add the note to the dialog's previous notes list
+                this.addNoteToDialog(noteActivity, noteDialog);
+                
+                // Clear the textarea
+                noteTextarea.value = '';
+                
+                // Show success message
+                this.showSuccess('Note created successfully!');
+            } catch (error) {
+                console.error('Failed to save note:', error);
+                this.showError('Failed to save note');
+            }
+        });
+
+        closeBtn.addEventListener('click', () => {
+            noteDialog.remove();
+        });
+
+        // Close dialog when clicking outside
+        noteDialog.addEventListener('click', (e) => {
+            if (e.target === noteDialog) {
+                noteDialog.remove();
+            }
+        });
+
+        // Focus on the textarea
+        if (noteTextarea) {
+            noteTextarea.focus();
+        }
+    }
+
+    addNoteToActivities(noteActivity, contact) {
+        // Find the activities timeline
+        const activitiesTimeline = document.querySelector('#activities .activity-timeline');
+        if (!activitiesTimeline) {
+            console.error('Activities timeline not found');
+            return;
+        }
+
+        // Find or create the "Today" group
+        let todayGroup = activitiesTimeline.querySelector('.timeline-group:first-child');
+        if (!todayGroup || !todayGroup.querySelector('.timeline-date').textContent.includes('Today')) {
+            // Create new "Today" group if it doesn't exist
+            todayGroup = document.createElement('div');
+            todayGroup.className = 'timeline-group';
+            todayGroup.innerHTML = `
+                <div class="timeline-date">Today</div>
+            `;
+            activitiesTimeline.insertBefore(todayGroup, activitiesTimeline.firstChild);
+        }
+
+        // Create the note activity HTML with click handler
+        const noteActivityHTML = `
+            <div class="activity-item note-activity" data-note-content="${noteActivity.content}" data-note-owner="${noteActivity.owner}" data-note-timestamp="${noteActivity.timestamp.toISOString()}">
+                <div class="activity-icon note">
+                    <i class="fas fa-sticky-note"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-header">
+                        <span class="activity-type">Note</span>
+                        <span class="activity-time">${noteActivity.timeAgo}</span>
+                    </div>
+                    <div class="activity-body">
+                        <p>${noteActivity.content}</p>
+                    </div>
+                    <div class="activity-footer">
+                        <span class="activity-owner">Created by ${noteActivity.owner}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Insert the new note at the top of the "Today" group
+        const todayDateElement = todayGroup.querySelector('.timeline-date');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = noteActivityHTML;
+        const noteElement = tempDiv.firstElementChild;
+        
+        todayGroup.insertBefore(noteElement, todayDateElement.nextSibling);
+
+        // Add click event listener to the note
+        noteElement.addEventListener('click', () => {
+            this.showEditableNoteDialog(noteActivity, contact, noteElement);
+        });
+    }
+
+    setupNoteActivitiesListeners(contact) {
+        // Find all note activity items in the timeline
+        const noteActivities = document.querySelectorAll('.activity-item .activity-icon.note');
+        
+        noteActivities.forEach(noteIcon => {
+            const activityItem = noteIcon.closest('.activity-item');
+            if (activityItem) {
+                // Add clickable styling
+                activityItem.classList.add('note-activity');
+                
+                // Extract note data from the activity item
+                const noteContent = activityItem.querySelector('.activity-body p')?.textContent || '';
+                const activityOwner = activityItem.querySelector('.activity-owner')?.textContent || 'Unknown';
+                const activityTime = activityItem.querySelector('.activity-time')?.textContent || '';
+                
+                // Create note activity object
+                const noteActivity = {
+                    id: activityItem.dataset.noteId || Date.now(), // Use existing ID if available
+                    type: 'Note',
+                    content: noteContent,
+                    owner: activityOwner.replace('Created by ', '').replace('Sent by ', '').replace('Called by ', '').replace('Assigned to ', '').replace('Scheduled by ', ''),
+                    timeAgo: activityTime,
+                    timestamp: new Date() // For existing notes, we'll use current time as fallback
+                };
+                
+                // Add click event listener
+                activityItem.addEventListener('click', () => {
+                    this.showEditableNoteDialog(noteActivity, contact, activityItem);
+                });
+            }
+        });
+    }
+
+    showEditableNoteDialog(noteActivity, contact, noteElement) {
+        const existingNotes = this.getExistingNotes(contact);
+        const noteContent = `
+            <div class="note-dialog">
+                <div class="note-header">
+                    <div class="note-title">
+                        <h3>Notes</h3>
+                        <span class="note-subtitle">For ${contact.firstName} ${contact.lastName}</span>
+                    </div>
+                    <div class="note-actions">
+                        <button class="btn btn-icon" title="Close" id="close-editable-note-dialog">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="note-content">
+                    <!-- Previous Notes Display -->
+                    <div class="previous-notes">
+                        <h4>Previous Notes</h4>
+                        <div class="notes-list">
+                            ${existingNotes.length > 0 ? existingNotes.map(note => `
+                                <div class="note-item" data-note-id="${note.id}">
+                                    <div class="note-item-header">
+                                        <div class="note-item-info">
+                                            <span class="note-owner">${note.owner}</span>
+                                            <span class="note-timestamp">${this.formatDateTime(note.timestamp)}</span>
+                                        </div>
+                                        <div class="note-item-actions">
+                                            <button class="btn btn-icon edit-note-btn" title="Edit" data-note-id="${note.id}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-icon delete-note-btn" title="Delete" data-note-id="${note.id}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="note-item-content">
+                                        <p>${note.content}</p>
+                                    </div>
+                                </div>
+                            `).join('') : '<div class="no-notes">No previous notes</div>'}
+                        </div>
+                    </div>
+                    
+                    <!-- New Note Section -->
+                    <div class="new-note-section">
+                        <h4>Add New Note</h4>
+                        <div class="note-textarea-container">
+                            <textarea
+                                id="editable-note-content"
+                                placeholder="Start typing to leave a note..."
+                                rows="4"
+                                class="note-textarea"
+                            >${noteActivity.content}</textarea>
+                        </div>
+                        <div class="note-formatting">
+                            <div class="formatting-buttons">
+                                <button class="btn btn-icon" title="Bold">
+                                    <i class="fas fa-bold"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Italic">
+                                    <i class="fas fa-italic"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Underline">
+                                    <i class="fas fa-underline"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Strikethrough">
+                                    <i class="fas fa-strikethrough"></i>
+                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-icon dropdown-toggle" title="More">
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <div class="dropdown-menu">
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-link"></i> Link
+                                        </a>
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-image"></i> Image
+                                        </a>
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-table"></i> Table
+                                        </a>
+                                        <a href="#" class="dropdown-item">
+                                            <i class="fas fa-paperclip"></i> Attachment
+                                        </a>
+                                    </div>
+                                </div>
+                                <button class="btn btn-icon" title="Bullet List">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Numbered List">
+                                    <i class="fas fa-list-ol"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Image">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Table">
+                                    <i class="fas fa-table"></i>
+                                </button>
+                                <button class="btn btn-icon" title="Attachment">
+                                    <i class="fas fa-paperclip"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="note-options">
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="notify-team" checked>
+                                <label for="notify-team">Notify team</label>
+                            </div>
+                            <div class="checkbox-container">
+                                <input type="checkbox" id="add-to-timeline" checked>
+                                <label for="add-to-timeline">Add to timeline</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="note-footer">
+                    <div class="note-footer-content">
+                        <div class="note-footer-left"></div>
+                        <div class="note-footer-right">
+                            <button class="btn btn-primary" id="save-editable-note-btn">
+                                Save
+                            </button>
+                            <button class="btn btn-link" id="cancel-editable-note-btn">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Create the note dialog as an overlay
+        const noteDialog = document.createElement('div');
+        noteDialog.className = 'note-dialog-overlay';
+        noteDialog.innerHTML = noteContent;
+        document.body.appendChild(noteDialog);
+
+        // Add event listeners
+        const saveNoteBtn = noteDialog.querySelector('#save-editable-note-btn');
+        const cancelNoteBtn = noteDialog.querySelector('#cancel-editable-note-btn');
+        const closeBtn = noteDialog.querySelector('#close-editable-note-dialog');
+        const noteTextarea = noteDialog.querySelector('#editable-note-content');
+
+        // Add error handling for missing elements
+        if (!saveNoteBtn || !noteTextarea || !cancelNoteBtn || !closeBtn) {
+            console.error('Required editable note dialog elements not found');
+            return;
+        }
+
+        // Setup note item actions (edit/delete for previous notes)
+        this.setupNoteItemActions(noteDialog, contact);
+
+        saveNoteBtn.addEventListener('click', async () => {
+            const updatedContent = noteTextarea.value.trim();
+            if (!updatedContent) {
+                this.showError('Please enter note content');
+                return;
+            }
+
+            try {
+                // Update the note activity
+                noteActivity.content = updatedContent;
+                noteActivity.timestamp = new Date();
+                noteActivity.timeAgo = 'Just now';
+
+                // Update the note element in the timeline
+                const noteBody = noteElement.querySelector('.activity-body p');
+                const noteTime = noteElement.querySelector('.activity-time');
+                if (noteBody) noteBody.textContent = updatedContent;
+                if (noteTime) noteTime.textContent = 'Just now';
+
+                // Show success message and close dialog
+                this.showSuccess('Note updated successfully!');
+                noteDialog.remove();
+            } catch (error) {
+                console.error('Failed to update note:', error);
+                this.showError('Failed to update note');
+            }
+        });
+
+        cancelNoteBtn.addEventListener('click', () => {
+            noteDialog.remove();
+        });
+
+        closeBtn.addEventListener('click', () => {
+            noteDialog.remove();
+        });
+
+        // Close dialog when clicking outside
+        noteDialog.addEventListener('click', (e) => {
+            if (e.target === noteDialog) {
+                noteDialog.remove();
+            }
+        });
+
+        // Focus on textarea
+        if (noteTextarea) {
+            noteTextarea.focus();
+            noteTextarea.select();
+        }
+    }
+
+    setupNoteItemActions(noteDialog, contact) {
+        const editNoteBtns = noteDialog.querySelectorAll('.edit-note-btn');
+        const deleteNoteBtns = noteDialog.querySelectorAll('.delete-note-btn');
+
+        editNoteBtns.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const noteId = e.currentTarget.dataset.noteId;
+                const noteItem = e.currentTarget.closest('.note-item');
+                const noteContent = noteItem.querySelector('.note-item-content p').textContent;
+                const noteOwner = noteItem.querySelector('.note-item-info .note-owner').textContent;
+                const noteTimestamp = noteItem.querySelector('.note-item-info .note-timestamp').textContent;
+
+                // Create edit dialog
+                const editDialogContent = `
+                    <div class="note-dialog">
+                        <div class="note-header">
+                            <div class="note-title">
+                                <h3>Edit Note by ${noteOwner}</h3>
+                            </div>
+                            <div class="note-actions">
+                                <span class="note-timestamp">${noteTimestamp}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="note-content">
+                            <div class="note-textarea-container">
+                                <textarea 
+                                    id="edit-note-content" 
+                                    placeholder="Start typing to leave a note..." 
+                                    rows="6"
+                                    class="note-textarea"
+                                >${noteContent}</textarea>
+                            </div>
+                            
+                            <div class="note-formatting">
+                                <div class="formatting-buttons">
+                                    <button class="btn btn-icon" title="Bold">
+                                        <i class="fas fa-bold"></i>
+                                    </button>
+                                    <button class="btn btn-icon" title="Italic">
+                                        <i class="fas fa-italic"></i>
+                                    </button>
+                                    <button class="btn btn-icon" title="Underline">
+                                        <i class="fas fa-underline"></i>
+                                    </button>
+                                    <button class="btn btn-icon" title="Strikethrough">
+                                        <i class="fas fa-strikethrough"></i>
+                                    </button>
+                                    <div class="dropdown">
+                                        <button class="btn btn-icon dropdown-toggle" title="More">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a href="#" class="dropdown-item">
+                                                <i class="fas fa-link"></i> Link
+                                            </a>
+                                            <a href="#" class="dropdown-item">
+                                                <i class="fas fa-image"></i> Image
+                                            </a>
+                                            <a href="#" class="dropdown-item">
+                                                <i class="fas fa-table"></i> Table
+                                            </a>
+                                            <a href="#" class="dropdown-item">
+                                                <i class="fas fa-paperclip"></i> Attachment
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <button class="btn btn-icon" title="Bullet List">
+                                        <i class="fas fa-list-ul"></i>
+                                    </button>
+                                    <button class="btn btn-icon" title="Numbered List">
+                                        <i class="fas fa-list-ol"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="note-footer">
+                            <div class="note-footer-content">
+                                <div class="note-footer-left">
+                                    <button class="btn btn-primary" id="save-note-btn">
+                                        Save
+                                    </button>
+                                    <button class="btn btn-link" id="cancel-edit-btn">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Create the edit dialog as an overlay
+                const editDialog = document.createElement('div');
+                editDialog.className = 'note-dialog-overlay';
+                editDialog.innerHTML = editDialogContent;
+                document.body.appendChild(editDialog);
+
+                // Add event listeners for the edit dialog
+                const saveBtn = editDialog.querySelector('#save-note-btn');
+                const cancelBtn = editDialog.querySelector('#cancel-edit-btn');
+                const editTextarea = editDialog.querySelector('#edit-note-content');
+
+                saveBtn.addEventListener('click', async () => {
+                    const updatedContent = editTextarea.value.trim();
+                    if (!updatedContent) {
+                        this.showError('Please enter note content');
+                        return;
+                    }
+
+                    try {
+                        // Update the note content in the original dialog
+                        const originalNoteItem = noteDialog.querySelector(`.note-item[data-note-id="${noteId}"]`);
+                        if (originalNoteItem) {
+                            const noteBody = originalNoteItem.querySelector('.note-item-content p');
+                            const noteTime = originalNoteItem.querySelector('.note-item-info .note-timestamp');
+                            if (noteBody) noteBody.textContent = updatedContent;
+                            if (noteTime) noteTime.textContent = 'Just now';
+                        }
+
+                        // Update the note in the activities timeline if it exists
+                        const timelineNote = document.querySelector(`.activity-item[data-note-id="${noteId}"]`);
+                        if (timelineNote) {
+                            const timelineNoteBody = timelineNote.querySelector('.activity-body p');
+                            const timelineNoteTime = timelineNote.querySelector('.activity-time');
+                            if (timelineNoteBody) timelineNoteBody.textContent = updatedContent;
+                            if (timelineNoteTime) timelineNoteTime.textContent = 'Just now';
+                        }
+
+                        editDialog.remove();
+                        this.showSuccess('Note updated successfully!');
+                    } catch (error) {
+                        console.error('Failed to update note:', error);
+                        this.showError('Failed to update note');
+                    }
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    editDialog.remove();
+                });
+
+                // Close edit dialog when clicking outside
+                editDialog.addEventListener('click', (e) => {
+                    if (e.target === editDialog) {
+                        editDialog.remove();
+                    }
+                });
+
+                // Focus on textarea
+                if (editTextarea) {
+                    editTextarea.focus();
+                    editTextarea.select();
+                }
+            });
+        });
+
+        deleteNoteBtns.forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const noteId = e.currentTarget.dataset.noteId;
+                const noteItem = e.currentTarget.closest('.note-item');
+
+                // Create confirmation dialog
+                const confirmDialogContent = `
+                    <div class="note-dialog" style="max-width: 400px;">
+                        <div class="note-header">
+                            <div class="note-title">
+                                <h3>Confirm Delete</h3>
+                            </div>
+                            <div class="note-actions">
+                                <button class="btn btn-icon" title="Close" id="close-confirm-dialog">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="note-content">
+                            <p>Are you sure you want to delete this note?</p>
+                            <p style="color: #6c757d; font-size: 0.875rem;">This action cannot be undone.</p>
+                        </div>
+                        
+                        <div class="note-footer">
+                            <div class="note-footer-content">
+                                <div class="note-footer-left">
+                                    <button class="btn btn-secondary" id="cancel-delete-btn">
+                                        Cancel
+                                    </button>
+                                </div>
+                                <div class="note-footer-right">
+                                    <button class="btn btn-danger" id="confirm-delete-btn">
+                                        Delete Note
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Create the confirmation dialog as an overlay
+                const confirmDialog = document.createElement('div');
+                confirmDialog.className = 'note-dialog-overlay';
+                confirmDialog.innerHTML = confirmDialogContent;
+                document.body.appendChild(confirmDialog);
+
+                // Add event listeners for the confirmation dialog
+                const cancelDeleteBtn = confirmDialog.querySelector('#cancel-delete-btn');
+                const confirmDeleteBtn = confirmDialog.querySelector('#confirm-delete-btn');
+                const closeConfirmBtn = confirmDialog.querySelector('#close-confirm-dialog');
+
+                cancelDeleteBtn.addEventListener('click', () => {
+                    confirmDialog.remove();
+                });
+
+                closeConfirmBtn.addEventListener('click', () => {
+                    confirmDialog.remove();
+                });
+
+                confirmDeleteBtn.addEventListener('click', async () => {
+                    try {
+                        // Remove the note from the dialog's notes list
+                        if (noteItem) {
+                            noteItem.remove();
+                        }
+
+                        // Remove the note from the activities timeline if it exists
+                        const timelineNote = document.querySelector(`.activity-item[data-note-id="${noteId}"]`);
+                        if (timelineNote) {
+                            timelineNote.remove();
+                        }
+
+                        confirmDialog.remove();
+                        this.showSuccess('Note deleted successfully!');
+                    } catch (error) {
+                        console.error('Failed to delete note:', error);
+                        this.showError('Failed to delete note');
+                    }
+                });
+
+                // Close confirmation dialog when clicking outside
+                confirmDialog.addEventListener('click', (e) => {
+                    if (e.target === confirmDialog) {
+                        confirmDialog.remove();
+                    }
+                });
+            });
+        });
+    }
+
+    getExistingNotes(contact) {
+        // This is a placeholder. In a real app, you'd fetch notes from an API
+        // For now, we'll simulate fetching some notes
+        return [
+            { id: '1', content: 'Initial contact. They seem interested in our premium package.', owner: 'John Doe', timestamp: new Date('2023-10-27T10:00:00') },
+            { id: '2', content: 'Followed up with a proposal email. Waiting for response.', owner: 'Jane Smith', timestamp: new Date('2023-10-27T14:30:00') },
+            { id: '3', content: 'Discussed pricing and next steps. They are considering the offer.', owner: 'John Doe', timestamp: new Date('2023-10-28T09:15:00') },
+            { id: '4', content: 'They have not responded to the proposal. Need to follow up.', owner: 'Jane Smith', timestamp: new Date('2023-10-28T11:00:00') },
+        ];
+    }
+
+    addNoteToDialog(noteActivity, noteDialog) {
+        const notesList = noteDialog.querySelector('.notes-list');
+        if (notesList) {
+            const noteItem = document.createElement('div');
+            noteItem.className = 'note-item';
+            noteItem.dataset.noteId = noteActivity.id;
+            noteItem.innerHTML = `
+                <div class="note-item-header">
+                    <div class="note-item-info">
+                        <span class="note-owner">${noteActivity.owner}</span>
+                        <span class="note-timestamp">${this.formatDateTime(noteActivity.timestamp)}</span>
+                    </div>
+                    <div class="note-item-actions">
+                        <button class="btn btn-icon edit-note-btn" title="Edit" data-note-id="${noteActivity.id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-icon delete-note-btn" title="Delete" data-note-id="${noteActivity.id}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="note-item-content">
+                    <p>${noteActivity.content}</p>
+                </div>
+            `;
+            notesList.appendChild(noteItem);
+        }
+    }
+
+    getRecentActivitiesHTML() {
+        // Sample activities data - in a real app, this would come from the database
+        const recentActivities = [
+            {
+                type: 'Note',
+                content: 'Followed up with the client regarding their requirements. They seem interested in our premium package.',
+                time: '2 hours ago',
+                owner: 'John Doe',
+                icon: 'fas fa-sticky-note',
+                iconClass: 'note'
+            },
+            {
+                type: 'Email',
+                content: 'Sent proposal email with pricing details and next steps.',
+                time: '4 hours ago',
+                owner: 'John Doe',
+                icon: 'fas fa-envelope',
+                iconClass: 'email'
+            },
+            {
+                type: 'Call',
+                content: 'Initial discovery call. Discussed their business needs and current challenges.',
+                time: '1 day ago',
+                owner: 'John Doe',
+                icon: 'fas fa-phone',
+                iconClass: 'call'
+            },
+            {
+                type: 'Task',
+                content: 'Prepare proposal document with custom pricing',
+                time: '1 day ago',
+                owner: 'John Doe',
+                icon: 'fas fa-tasks',
+                iconClass: 'task'
+            },
+            {
+                type: 'Meeting',
+                content: 'Product demo meeting with technical team',
+                time: '3 days ago',
+                owner: 'John Doe',
+                icon: 'fas fa-calendar',
+                iconClass: 'meeting'
+            }
+        ];
+
+        if (recentActivities.length === 0) {
+            return `
+                <div class="no-activities">
+                    <i class="fas fa-search"></i>
+                    <p>No activities</p>
+                </div>
+            `;
+        }
+
+        const activitiesHTML = recentActivities.map(activity => `
+            <div class="recent-activity-item">
+                <div class="activity-icon ${activity.iconClass}">
+                    <i class="${activity.icon}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-header">
+                        <span class="activity-type">${activity.type}</span>
+                        <span class="activity-time">${activity.time}</span>
+                    </div>
+                    <div class="activity-body">
+                        <p>${activity.content}</p>
+                    </div>
+                    <div class="activity-footer">
+                        <span class="activity-owner">${activity.type === 'Note' ? 'Created by' : activity.type === 'Email' ? 'Sent by' : activity.type === 'Call' ? 'Called by' : activity.type === 'Task' ? 'Assigned to' : 'Scheduled by'} ${activity.owner}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        return `
+            <div class="recent-activities-list">
+                ${activitiesHTML}
+            </div>
+        `;
     }
 }
 

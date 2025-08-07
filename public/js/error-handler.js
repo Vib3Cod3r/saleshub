@@ -9,7 +9,8 @@ class ErrorHandler {
 
     init() {
         this.createErrorContainer();
-        this.checkConnection();
+        // Don't check connection during initialization to avoid 401 errors
+        // this.checkConnection();
     }
 
     // Create error display container
@@ -83,7 +84,7 @@ class ErrorHandler {
                         font-size: 14px;
                         font-weight: 500;
                         transition: background 0.2s;
-                    " onmouseover="this.style.background='#0056b3'" onmouseout="this.style.background='#007bff'">
+                    ">
                         <i class="fas fa-redo"></i> Retry Connection
                     </button>
                     <button id="check-status-btn" style="
@@ -96,7 +97,7 @@ class ErrorHandler {
                         font-size: 14px;
                         font-weight: 500;
                         transition: background 0.2s;
-                    " onmouseover="this.style.background='#545b62'" onmouseout="this.style.background='#6c757d'">
+                    ">
                         <i class="fas fa-info-circle"></i> Check Status
                     </button>
                 </div>
@@ -125,11 +126,27 @@ class ErrorHandler {
             retryBtn.addEventListener('click', () => {
                 this.retryConnection();
             });
+            
+            // Add hover effects
+            retryBtn.addEventListener('mouseover', () => {
+                retryBtn.style.background = '#0056b3';
+            });
+            retryBtn.addEventListener('mouseout', () => {
+                retryBtn.style.background = '#007bff';
+            });
         }
 
         if (checkStatusBtn) {
             checkStatusBtn.addEventListener('click', () => {
                 this.checkServerStatus();
+            });
+            
+            // Add hover effects
+            checkStatusBtn.addEventListener('mouseover', () => {
+                checkStatusBtn.style.background = '#545b62';
+            });
+            checkStatusBtn.addEventListener('mouseout', () => {
+                checkStatusBtn.style.background = '#6c757d';
             });
         }
     }
@@ -148,6 +165,7 @@ class ErrorHandler {
             // Server is responding - this is good
             if (response.status === 401) {
                 // 401 means server is working but no auth token - this is expected for new users
+                // Don't show error modal for 401, let the app handle authentication
                 this.hideError();
                 this.retryCount = 0;
                 return true;
@@ -160,6 +178,11 @@ class ErrorHandler {
             }
         } catch (error) {
             console.error('Connection check failed:', error);
+            // Only show connection error for actual connection issues, not 401
+            if (error.message.includes('401')) {
+                this.hideError();
+                return true;
+            }
             this.showError('Unable to connect to the server. Please check if the server is running.');
             return false;
         }
@@ -295,12 +318,16 @@ class ErrorHandler {
     handleAPIError(error, context = '') {
         console.error('API Error:', error);
         
+        // Don't show error modal for 401 responses - let the app handle authentication
+        if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+            console.log('401 response detected - letting app handle authentication');
+            return;
+        }
+        
         let userMessage = 'An error occurred while processing your request.';
         
         if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
             userMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
-        } else if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-            userMessage = 'Your session has expired. Please log in again.';
         } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
             userMessage = 'You do not have permission to perform this action.';
         } else if (error.message.includes('404')) {

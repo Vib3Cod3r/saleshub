@@ -51,10 +51,11 @@ class APIClient {
             // Handle unauthorized requests
             if (error.message.includes('401') || error.message.includes('Invalid or expired token')) {
                 this.setToken(null);
-                window.location.reload();
+                // Don't trigger error handler for 401 - let the app handle authentication
+                throw error;
             }
             
-            // Use error handler if available
+            // Use error handler if available (only for non-401 errors)
             if (window.errorHandler) {
                 window.errorHandler.handleAPIError(error);
             }

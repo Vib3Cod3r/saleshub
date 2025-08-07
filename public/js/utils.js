@@ -408,7 +408,7 @@ const Utils = {
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>${title}</h3>
-                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                    <button class="modal-close" id="modal-close-btn">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -424,6 +424,14 @@ const Utils = {
         `;
 
         document.body.appendChild(modal);
+
+        // Add event listener for close button
+        const closeBtn = modal.querySelector('#modal-close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.remove();
+            });
+        }
 
         // Close modal when clicking outside
         modal.addEventListener('click', (e) => {
