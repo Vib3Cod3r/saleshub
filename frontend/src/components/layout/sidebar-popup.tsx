@@ -52,7 +52,7 @@ export function SidebarPopup({ isOpen, onClose, title, children }: SidebarPopupP
                 >
                   <div className="flex h-full flex-col">
                     {/* Title aligned with content */}
-                    <div className="px-3 pt-4 pb-4">
+                    <div className="px-7 pt-4 pb-4">
                       <Dialog.Title className="text-lg font-semibold text-gray-900">
                         {title}
                       </Dialog.Title>
