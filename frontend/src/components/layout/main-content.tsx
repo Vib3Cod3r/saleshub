@@ -12,13 +12,13 @@ export function MainContent({ children }: MainContentProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div>
+    <div className="min-h-screen bg-gray-50">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
       
-      <div className="lg:pl-72">
+      <div className="lg:pl-16">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         
-        <main className="py-10">
+        <main className="py-6">
           <div className="px-4 sm:px-6 lg:px-8">
             {children}
           </div>

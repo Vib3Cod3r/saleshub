@@ -6,7 +6,14 @@ import {
   Bars3Icon, 
   BellIcon, 
   MagnifyingGlassIcon,
-  UserCircleIcon 
+  UserCircleIcon,
+  PhoneIcon,
+  BuildingStorefrontIcon,
+  Cog6ToothIcon,
+  ChevronDownIcon,
+  PlusIcon,
+  StarIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline'
 import { useAuth } from '@/hooks/use-auth'
 import { cn } from '@/lib/utils'
@@ -19,52 +26,110 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
-    <header className="bg-primary-800 text-white shadow-sm">
-      <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center">
+    <header className="text-white shadow-sm bg-slate-800">
+      <div className="flex h-14 items-center justify-between px-4">
+        <div className="flex items-center space-x-4">
           <button
             type="button"
-            className="text-gray-400 hover:text-white lg:hidden"
+            className="text-white hover:text-gray-300 lg:hidden"
             onClick={onMenuClick}
           >
             <span className="sr-only">Open sidebar</span>
-            <Bars3Icon className="h-6 w-6" aria-hidden="true" />
+            <Bars3Icon className="h-5 w-5" aria-hidden="true" />
           </button>
           
-          <div className="ml-4 lg:ml-0">
-            <h1 className="text-xl font-semibold">SalesHub CRM</h1>
+          {/* Search */}
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
+              </div>
+              <input
+                type="text"
+                className="block w-80 rounded-lg border-0 py-2 pl-10 pr-3 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-sm leading-5 bg-slate-700"
+                placeholder="Search HubSpot"
+              />
+            </div>
+            
+            {/* Keyboard shortcut button */}
+            <button className="px-2 py-1 text-xs text-gray-300 rounded border border-gray-600 hover:bg-slate-700 transition-colors duration-200 bg-slate-700">
+              Ctrl K
+            </button>
+            
+            {/* Plus button */}
+            <button className="p-1.5 text-white hover:text-gray-300 rounded-full hover:bg-slate-700 transition-colors duration-200">
+              <PlusIcon className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="hidden sm:block">
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-              </div>
-              <input
-                type="text"
-                className="block w-full rounded-md border-0 bg-primary-700 py-1.5 pl-10 pr-3 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-primary-500 sm:text-sm sm:leading-6"
-                placeholder="Search..."
-              />
-            </div>
+          {/* Icons */}
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+            >
+              <span className="sr-only">Phone</span>
+              <PhoneIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+            
+            <button
+              type="button"
+              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+            >
+              <span className="sr-only">Store</span>
+              <BuildingStorefrontIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+            
+            <button
+              type="button"
+              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+            >
+              <span className="sr-only">Help</span>
+              <QuestionMarkCircleIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+            
+            <button
+              type="button"
+              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+            >
+              <span className="sr-only">Settings</span>
+              <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+            
+            <button
+              type="button"
+              className="relative text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
+              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+            >
+              <span className="sr-only">Notifications</span>
+              <BellIcon className="h-5 w-5" aria-hidden="true" />
+              <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                1
+              </span>
+            </button>
           </div>
 
-          {/* Notifications */}
-          <button
-            type="button"
-            className="rounded-full bg-primary-700 p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-primary-800"
-          >
-            <span className="sr-only">View notifications</span>
-            <BellIcon className="h-6 w-6" aria-hidden="true" />
-          </button>
+          {/* Copilot */}
+          <div className="flex items-center space-x-2">
+            <StarIcon className="h-4 w-4 text-orange-500" aria-hidden="true" />
+            <span className="text-sm font-medium">Copilot</span>
+          </div>
 
           {/* User menu */}
           <Menu as="div" className="relative">
-            <Menu.Button className="flex rounded-full bg-primary-700 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-primary-800">
+            <Menu.Button className="flex items-center space-x-2 text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200" style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}>
               <span className="sr-only">Open user menu</span>
-              <UserCircleIcon className="h-8 w-8 text-gray-400" aria-hidden="true" />
+              <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                <UserCircleIcon className="h-5 w-5 text-gray-300" aria-hidden="true" />
+              </div>
+              <span className="text-sm font-medium">{user?.email || 'fanjango.com.hk'}</span>
+              <ChevronDownIcon className="h-4 w-4" aria-hidden="true" />
             </Menu.Button>
             <Transition
               as={Fragment}
@@ -75,10 +140,10 @@ export function Header({ onMenuClick }: HeaderProps) {
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none border border-gray-200">
                 <Menu.Item>
-                  {({ active }) => (
-                    <div className="px-4 py-2 text-sm text-gray-700">
+                  {() => (
+                    <div className="px-3 py-2 text-sm text-gray-700 border-b border-gray-100">
                       {user?.firstName} {user?.lastName}
                     </div>
                   )}
@@ -88,8 +153,8 @@ export function Header({ onMenuClick }: HeaderProps) {
                     <button
                       onClick={logout}
                       className={cn(
-                        active ? 'bg-gray-100' : '',
-                        'block w-full px-4 py-2 text-left text-sm text-gray-700'
+                        active ? 'bg-gray-100 text-gray-900' : 'text-gray-700',
+                        'block w-full px-3 py-2 text-left text-sm transition-colors duration-200'
                       )}
                     >
                       Sign out

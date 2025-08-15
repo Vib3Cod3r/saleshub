@@ -101,10 +101,11 @@ class ApiClient {
 
   // Auth endpoints
   async login(email: string, password: string): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/login', {
+    const response = await this.request<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
+    return response.data!
   }
 
   async register(userData: {
@@ -113,14 +114,16 @@ class ApiClient {
     firstName: string
     lastName: string
   }): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/api/auth/register', {
+    const response = await this.request<AuthResponse>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
+    return response.data!
   }
 
   async getProfile(): Promise<ProfileResponse> {
-    return this.request<ProfileResponse>('/api/auth/me')
+    const response = await this.request<ProfileResponse>('/api/auth/me')
+    return response.data!
   }
 
   // Companies endpoints

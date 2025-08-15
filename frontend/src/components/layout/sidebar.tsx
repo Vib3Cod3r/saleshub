@@ -4,26 +4,36 @@ import { Fragment } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Dialog, Transition } from '@headlessui/react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
 import { 
-  BuildingOfficeIcon,
-  UserGroupIcon,
+  BookmarkIcon,
+  Squares2X2Icon,
+  MegaphoneIcon,
+  DocumentTextIcon,
+  ShoppingCartIcon,
+  CreditCardIcon,
   UserIcon,
-  CurrencyDollarIcon,
-  ClipboardDocumentListIcon,
+  UserGroupIcon,
   ChartBarIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  MapIcon,
+  WrenchScrewdriverIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: ChartBarIcon },
-  { name: 'Companies', href: '/companies', icon: BuildingOfficeIcon },
-  { name: 'Contacts', href: '/contacts', icon: UserGroupIcon },
-  { name: 'Leads', href: '/leads', icon: UserIcon },
-  { name: 'Deals', href: '/deals', icon: CurrencyDollarIcon },
-  { name: 'Tasks', href: '/tasks', icon: ClipboardDocumentListIcon },
+  { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
+  { name: 'Dashboard', href: '/', icon: Squares2X2Icon },
+  { name: 'Marketing', href: '/marketing', icon: MegaphoneIcon },
+  { name: 'Documents', href: '/documents', icon: DocumentTextIcon },
+  { name: 'E-commerce', href: '/ecommerce', icon: ShoppingCartIcon },
+  { name: 'Payments', href: '/payments', icon: CreditCardIcon },
+  { name: 'Contacts', href: '/contacts', icon: UserIcon },
+  { name: 'Companies', href: '/companies', icon: UserGroupIcon },
+  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
   { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
+  { name: 'Navigation', href: '/navigation', icon: MapIcon },
+  { name: 'Tools', href: '/tools', icon: WrenchScrewdriverIcon },
 ]
 
 interface SidebarProps {
@@ -62,35 +72,41 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
               leaveTo="-translate-x-full"
             >
               <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
-                <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-primary-800 px-6 pb-4">
-                  <div className="flex h-16 shrink-0 items-center">
-                    <h2 className="text-xl font-semibold text-white">SalesHub CRM</h2>
+                <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3 bg-slate-800">
+                  <div className="flex h-14 shrink-0 items-center justify-center">
+                    {/* HubSpot-like logo */}
+                    <div className="w-6 h-6 bg-orange-500 rounded-sm flex items-center justify-center">
+                      <div className="w-3 h-3 bg-white rounded-sm"></div>
+                    </div>
                   </div>
+                  
                   <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-7">
-                      <li>
-                        <ul role="list" className="-mx-2 space-y-1">
-                          {navigation.map((item) => (
-                            <li key={item.name}>
-                              <Link
-                                href={item.href}
-                                className={cn(
-                                  pathname === item.href
-                                    ? 'bg-primary-700 text-white'
-                                    : 'text-gray-400 hover:text-white hover:bg-primary-700',
-                                  'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                                )}
-                                onClick={() => setSidebarOpen(false)}
-                              >
-                                <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </li>
+                    <ul role="list" className="flex flex-1 flex-col gap-y-2">
+                      {navigation.map((item) => (
+                        <li key={item.name}>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              pathname === item.href
+                                ? 'bg-blue-600 text-white'
+                                : 'text-white hover:bg-slate-700',
+                              'group flex items-center justify-center w-10 h-10 rounded-lg mx-auto transition-colors duration-200'
+                            )}
+                            onClick={() => setSidebarOpen(false)}
+                          >
+                            <item.icon className="h-5 w-5" aria-hidden="true" />
+                          </Link>
+                        </li>
+                      ))}
                     </ul>
                   </nav>
+
+                  {/* Bottom arrow */}
+                  <div className="flex justify-center">
+                    <button className="flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-slate-700 transition-colors duration-200">
+                      <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
               </Dialog.Panel>
             </Transition.Child>
@@ -99,35 +115,41 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
       </Transition.Root>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-primary-800 px-6 pb-4">
-          <div className="flex h-16 shrink-0 items-center">
-            <h2 className="text-xl font-semibold text-white">SalesHub CRM</h2>
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-16 lg:flex-col">
+        <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3 bg-slate-800">
+          <div className="flex h-14 shrink-0 items-center justify-center">
+            {/* HubSpot-like logo */}
+            <div className="w-6 h-6 bg-orange-500 rounded-sm flex items-center justify-center">
+              <div className="w-3 h-3 bg-white rounded-sm"></div>
+            </div>
           </div>
+          
           <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-7">
-              <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          pathname === item.href
-                            ? 'bg-primary-700 text-white'
-                            : 'text-gray-400 hover:text-white hover:bg-primary-700',
-                          'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
-                        )}
-                      >
-                        <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </li>
+            <ul role="list" className="flex flex-1 flex-col gap-y-2">
+              {navigation.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className={cn(
+                      pathname === item.href
+                        ? 'bg-blue-600 text-white'
+                        : 'text-white hover:bg-slate-700',
+                      'group flex items-center justify-center w-10 h-10 rounded-lg mx-auto transition-colors duration-200'
+                    )}
+                  >
+                    <item.icon className="h-5 w-5" aria-hidden="true" />
+                  </Link>
+                </li>
+              ))}
             </ul>
           </nav>
+
+          {/* Bottom arrow */}
+          <div className="flex justify-center">
+            <button className="flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-slate-700 transition-colors duration-200">
+              <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
     </>

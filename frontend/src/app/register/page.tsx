@@ -45,7 +45,7 @@ export default function RegisterPage() {
         password: formData.password
       })
       router.push('/')
-    } catch (err) {
+    } catch (_err) {
       setError('Registration failed. Please try again.')
     } finally {
       setLoading(false)
