@@ -26,7 +26,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
-    <header className="text-white shadow-lg bg-slate-800">
+    <header className="text-white shadow-lg bg-slate-800 pr-9">
       <div className="flex h-14 items-center justify-between px-4 lg:px-0">
         <div className="flex items-center space-x-4 lg:space-x-0">
           <button
@@ -59,11 +59,10 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         <div className="flex items-center space-x-4">
           {/* Icons */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-8">
             <button
               type="button"
-              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
-              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+              className="text-white hover:bg-slate-700 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200"
             >
               <span className="sr-only">Phone</span>
               <PhoneIcon className="h-5 w-5" aria-hidden="true" />
@@ -71,8 +70,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             
             <button
               type="button"
-              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
-              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+              className="text-white hover:bg-slate-700 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200"
             >
               <span className="sr-only">Store</span>
               <BuildingStorefrontIcon className="h-5 w-5" aria-hidden="true" />
@@ -80,8 +78,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             
             <button
               type="button"
-              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
-              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+              className="text-white hover:bg-slate-700 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200"
             >
               <span className="sr-only">Help</span>
               <QuestionMarkCircleIcon className="h-5 w-5" aria-hidden="true" />
@@ -89,8 +86,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             
             <button
               type="button"
-              className="text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
-              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+              className="text-white hover:bg-slate-700 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200"
             >
               <span className="sr-only">Settings</span>
               <Cog6ToothIcon className="h-5 w-5" aria-hidden="true" />
@@ -98,8 +94,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             
             <button
               type="button"
-              className="relative text-white hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 transition-colors duration-200"
-              style={{ '--tw-ring-offset-color': '#1e293b' } as React.CSSProperties}
+              className="relative text-white hover:bg-slate-700 flex items-center justify-center w-10 h-10 rounded-lg transition-colors duration-200"
             >
               <span className="sr-only">Notifications</span>
               <BellIcon className="h-5 w-5" aria-hidden="true" />

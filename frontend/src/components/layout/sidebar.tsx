@@ -80,7 +80,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, logoImage, logoAlt = "Log
                   </div>
                   
                   <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-2">
+                    <ul role="list" className="flex flex-1 flex-col gap-y-8 mt-2">
                       {navigation.map((item) => (
                         <li key={item.name}>
                           <button
@@ -139,7 +139,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, logoImage, logoAlt = "Log
           </div>
           
                             <nav className="flex flex-1 flex-col">
-                    <ul role="list" className="flex flex-1 flex-col gap-y-2">
+                    <ul role="list" className="flex flex-1 flex-col gap-y-8 mt-2">
                       {navigation.map((item) => (
                         <li key={item.name}>
                           <button
