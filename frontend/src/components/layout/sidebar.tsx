@@ -1,8 +1,6 @@
 'use client'
 
-import { Fragment } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
 import { 
   BookmarkIcon,
@@ -14,6 +12,8 @@ import {
   ArrowRightIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
+import { SidebarPopup } from './sidebar-popup'
+import { PopupContent } from './popup-content'
 
 const navigation = [
   { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
@@ -30,7 +30,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
-  const pathname = usePathname()
+  const [popupOpen, setPopupOpen] = useState(false)
+  const [selectedItem, setSelectedItem] = useState<typeof navigation[0] | null>(null)
 
   return (
     <>
@@ -72,35 +73,42 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
                     <ul role="list" className="flex flex-1 flex-col gap-y-2">
                       {navigation.map((item) => (
                         <li key={item.name}>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              pathname === item.href
-                                ? 'bg-blue-600 text-white'
-                                : 'text-white hover:bg-slate-700',
-                              'group flex items-center justify-center w-10 h-10 rounded-lg mx-auto transition-colors duration-200'
-                            )}
-                            onClick={() => setSidebarOpen(false)}
+                          <button
+                            onClick={() => {
+                              setSelectedItem(item)
+                              setPopupOpen(true)
+                              setSidebarOpen(false)
+                            }}
+                            className="text-white hover:bg-slate-700 group flex items-center justify-center w-10 h-10 rounded-lg mx-auto transition-colors duration-200"
                           >
                             <item.icon className="h-5 w-5" aria-hidden="true" />
-                          </Link>
+                          </button>
                         </li>
                       ))}
                     </ul>
                   </nav>
 
-                  {/* Bottom arrow */}
-                  <div className="flex justify-center">
-                    <button className="flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-slate-700 transition-colors duration-200">
-                      <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-              </Dialog.Panel>
-            </Transition.Child>
+                            {/* Bottom arrow */}
+          <div className="flex justify-center">
+            <button className="flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-slate-700 transition-colors duration-200">
+              <ArrowRightIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
           </div>
-        </Dialog>
-      </Transition.Root>
+        </div>
+      </Dialog.Panel>
+    </Transition.Child>
+  </div>
+</Dialog>
+</Transition.Root>
+
+      {/* Sidebar Popup */}
+      <SidebarPopup
+        isOpen={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        title={selectedItem?.name || ''}
+      >
+        <PopupContent type={selectedItem?.name || ''} onClose={() => setPopupOpen(false)} />
+      </SidebarPopup>
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-16 lg:flex-col">
@@ -112,25 +120,23 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
             </div>
           </div>
           
-          <nav className="flex flex-1 flex-col">
-            <ul role="list" className="flex flex-1 flex-col gap-y-2">
-              {navigation.map((item) => (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      pathname === item.href
-                        ? 'bg-blue-600 text-white'
-                        : 'text-white hover:bg-slate-700',
-                      'group flex items-center justify-center w-10 h-10 rounded-lg mx-auto transition-colors duration-200'
-                    )}
-                  >
-                    <item.icon className="h-5 w-5" aria-hidden="true" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+                            <nav className="flex flex-1 flex-col">
+                    <ul role="list" className="flex flex-1 flex-col gap-y-2">
+                      {navigation.map((item) => (
+                        <li key={item.name}>
+                          <button
+                            onClick={() => {
+                              setSelectedItem(item)
+                              setPopupOpen(true)
+                            }}
+                            className="text-white hover:bg-slate-700 group flex items-center justify-center w-10 h-10 rounded-lg mx-auto transition-colors duration-200"
+                          >
+                            <item.icon className="h-5 w-5" aria-hidden="true" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </nav>
 
           {/* Bottom arrow */}
           <div className="flex justify-center">
@@ -140,6 +146,15 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
           </div>
         </div>
       </div>
+
+      {/* Sidebar Popup for Desktop */}
+      <SidebarPopup
+        isOpen={popupOpen}
+        onClose={() => setPopupOpen(false)}
+        title={selectedItem?.name || ''}
+      >
+        <PopupContent type={selectedItem?.name || ''} onClose={() => setPopupOpen(false)} />
+      </SidebarPopup>
     </>
   )
 }
