@@ -1,5 +1,27 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8089'
 
+export interface User {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+  role: string
+}
+
+export interface LoginResponse {
+  token: string
+  user: User
+}
+
+export interface RegisterResponse {
+  token: string
+  user: User
+}
+
+export interface ProfileResponse {
+  user: User
+}
+
 export interface ApiResponse<T> {
   data?: T
   message?: string
@@ -62,8 +84,8 @@ class ApiClient {
   }
 
   // Auth endpoints
-  async login(email: string, password: string) {
-    return this.request('/api/auth/login', {
+  async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    return this.request<LoginResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
@@ -74,15 +96,15 @@ class ApiClient {
     password: string
     firstName: string
     lastName: string
-  }) {
-    return this.request('/api/auth/register', {
+  }): Promise<ApiResponse<RegisterResponse>> {
+    return this.request<RegisterResponse>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
   }
 
-  async getProfile() {
-    return this.request('/api/auth/me')
+  async getProfile(): Promise<ApiResponse<ProfileResponse>> {
+    return this.request<ProfileResponse>('/api/auth/me')
   }
 
   // Companies endpoints

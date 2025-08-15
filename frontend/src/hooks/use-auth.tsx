@@ -1,15 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { apiClient } from '@/lib/api'
-
-interface User {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  role: string
-}
+import { apiClient, User } from '@/lib/api'
 
 interface AuthContextType {
   user: User | null
@@ -40,8 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const token = localStorage.getItem('authToken')
         if (token) {
           const response = await apiClient.getProfile()
-          if (response.user) {
-            setUser(response.user)
+          if (response.data?.user) {
+            setUser(response.data.user)
           }
         }
       }
@@ -58,11 +50,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     try {
       const response = await apiClient.login(email, password)
-      if (response.token) {
+      if (response.data?.token) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('authToken', response.token)
+          localStorage.setItem('authToken', response.data.token)
         }
-        setUser(response.user)
+        setUser(response.data.user)
       } else {
         throw new Error('Login failed')
       }
@@ -80,11 +72,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }) => {
     try {
       const response = await apiClient.register(userData)
-      if (response.token) {
+      if (response.data?.token) {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('authToken', response.token)
+          localStorage.setItem('authToken', response.data.token)
         }
-        setUser(response.user)
+        setUser(response.data.user)
       } else {
         throw new Error('Registration failed')
       }
