@@ -11,12 +11,6 @@ import {
   DocumentTextIcon,
   ShoppingCartIcon,
   CreditCardIcon,
-  UserIcon,
-  UserGroupIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
-  MapIcon,
-  WrenchScrewdriverIcon,
   ArrowRightIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
@@ -28,12 +22,6 @@ const navigation = [
   { name: 'Documents', href: '/documents', icon: DocumentTextIcon },
   { name: 'E-commerce', href: '/ecommerce', icon: ShoppingCartIcon },
   { name: 'Payments', href: '/payments', icon: CreditCardIcon },
-  { name: 'Contacts', href: '/contacts', icon: UserIcon },
-  { name: 'Companies', href: '/companies', icon: UserGroupIcon },
-  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
-  { name: 'Navigation', href: '/navigation', icon: MapIcon },
-  { name: 'Tools', href: '/tools', icon: WrenchScrewdriverIcon },
 ]
 
 interface SidebarProps {

@@ -105,7 +105,7 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
-    return response.data!
+    return response as AuthResponse
   }
 
   async register(userData: {
@@ -118,12 +118,12 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(userData),
     })
-    return response.data!
+    return response as AuthResponse
   }
 
   async getProfile(): Promise<ProfileResponse> {
     const response = await this.request<ProfileResponse>('/api/auth/me')
-    return response.data!
+    return response as ProfileResponse
   }
 
   // Companies endpoints

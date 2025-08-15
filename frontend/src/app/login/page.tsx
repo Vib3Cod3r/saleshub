@@ -48,7 +48,7 @@ export default function LoginPage() {
                     <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
                     <div className="absolute -top-1 -right-1 w-8 h-8 border-2 border-blue-500 rounded-full"></div>
                   </div>
-                  <span className="text-2xl font-bold text-blue-600">Cosiro</span>
+                  <span className="text-2xl font-bold text-blue-600">SalesHub</span>
                 </div>
               </div>
 

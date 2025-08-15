@@ -91,7 +91,7 @@ func Register(c *gin.Context) {
 	}
 
 	// Load user with role
-	config.DB.Preload("Role").First(&user, user.ID)
+	config.DB.Preload("Role").Where("id = ?", user.ID).First(&user)
 
 	c.JSON(http.StatusCreated, AuthResponse{
 		Token: token,
@@ -134,7 +134,7 @@ func Login(c *gin.Context) {
 	}
 
 	// Load user with role
-	if err := config.DB.Preload("Role").First(&user, user.ID).Error; err != nil {
+	if err := config.DB.Preload("Role").Where("id = ?", user.ID).First(&user).Error; err != nil {
 		// Log the error but don't fail the login
 		log.Printf("Warning: Failed to load user role: %v", err)
 	}
@@ -154,7 +154,7 @@ func GetProfile(c *gin.Context) {
 	}
 
 	// Load user with role and tenant
-	if err := config.DB.Preload("Role").Preload("Tenant").First(user, user.ID).Error; err != nil {
+	if err := config.DB.Preload("Role").Preload("Tenant").Where("id = ?", user.ID).First(user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load user profile"})
 		return
 	}
@@ -198,7 +198,7 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	// Load user with role and tenant
-	if err := config.DB.Preload("Role").Preload("Tenant").First(user, user.ID).Error; err != nil {
+	if err := config.DB.Preload("Role").Preload("Tenant").Where("id = ?", user.ID).First(user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load user profile"})
 		return
 	}
@@ -263,7 +263,7 @@ func RefreshToken(c *gin.Context) {
 	}
 
 	// Load user with role
-	config.DB.Preload("Role").First(user, user.ID)
+	config.DB.Preload("Role").Where("id = ?", user.ID).First(user)
 
 	c.JSON(http.StatusOK, AuthResponse{
 		Token: token,

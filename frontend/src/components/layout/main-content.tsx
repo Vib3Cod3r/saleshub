@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
+import { ErrorBoundary } from '../error-boundary'
 
 interface MainContentProps {
   children: React.ReactNode
@@ -10,20 +12,52 @@ interface MainContentProps {
 
 export function MainContent({ children }: MainContentProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const pathname = usePathname()
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+  
+  // Don't show header and sidebar for auth pages
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password'
+
+  // Prevent hydration mismatch by waiting for client-side mount
+  if (!mounted) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gray-50">
+          {children}
+        </div>
+      </ErrorBoundary>
+    )
+  }
+
+  if (isAuthPage) {
+    return (
+      <ErrorBoundary>
+        <div className="min-h-screen bg-gray-50">
+          {children}
+        </div>
+      </ErrorBoundary>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-      
-      <div className="lg:pl-16">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gray-50">
+        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
         
-        <main className="py-6">
-          <div className="px-4 sm:px-6 lg:px-8">
-            {children}
-          </div>
-        </main>
+        <div className="lg:pl-16">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+          
+          <main className="py-6">
+            <div className="px-4 sm:px-6 lg:px-8">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </ErrorBoundary>
   )
 }
