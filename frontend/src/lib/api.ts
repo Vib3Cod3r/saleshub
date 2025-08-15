@@ -5,7 +5,16 @@ export interface User {
   email: string
   firstName: string
   lastName: string
-  role: string
+  avatar?: string | null
+  isActive: boolean
+  roleId?: string
+  role?: any
+  tenantId: string
+  tenant?: any
+  createdAt: string
+  updatedAt: string
+  createdBy?: string | null
+  deletedAt?: any
 }
 
 export interface LoginResponse {
@@ -26,6 +35,12 @@ export interface ApiResponse<T> {
   data?: T
   message?: string
   error?: string
+}
+
+// For auth endpoints that return data directly
+export interface AuthResponse {
+  token: string
+  user: User
 }
 
 export interface PaginatedResponse<T> {
@@ -73,9 +88,10 @@ class ApiClient {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`)
+        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
       }
 
+      // Backend returns data directly, so return it as is
       return data
     } catch (error) {
       console.error('API request failed:', error)
@@ -84,8 +100,8 @@ class ApiClient {
   }
 
   // Auth endpoints
-  async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
-    return this.request<LoginResponse>('/api/auth/login', {
+  async login(email: string, password: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
@@ -96,14 +112,14 @@ class ApiClient {
     password: string
     firstName: string
     lastName: string
-  }): Promise<ApiResponse<RegisterResponse>> {
-    return this.request<RegisterResponse>('/api/auth/register', {
+  }): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
   }
 
-  async getProfile(): Promise<ApiResponse<ProfileResponse>> {
+  async getProfile(): Promise<ProfileResponse> {
     return this.request<ProfileResponse>('/api/auth/me')
   }
 

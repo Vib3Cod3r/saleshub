@@ -22,8 +22,13 @@ export default function LoginPage() {
     try {
       await login(email, password)
       router.push('/')
-    } catch {
-      setError('Invalid email or password')
+    } catch (error) {
+      console.error('Login error:', error)
+      if (error instanceof Error) {
+        setError(error.message || 'Invalid email or password')
+      } else {
+        setError('Invalid email or password')
+      }
     } finally {
       setLoading(false)
     }

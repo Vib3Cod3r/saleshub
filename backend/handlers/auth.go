@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -133,7 +134,10 @@ func Login(c *gin.Context) {
 	}
 
 	// Load user with role
-	config.DB.Preload("Role").First(&user, user.ID)
+	if err := config.DB.Preload("Role").First(&user, user.ID).Error; err != nil {
+		// Log the error but don't fail the login
+		log.Printf("Warning: Failed to load user role: %v", err)
+	}
 
 	c.JSON(http.StatusOK, AuthResponse{
 		Token: token,

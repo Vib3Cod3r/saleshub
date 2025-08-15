@@ -61,7 +61,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// Add user info to context
-		c.Set("user", user)
+		c.Set("user", &user)
 		c.Set("userId", claims.UserID)
 		c.Set("tenantID", claims.TenantID)
 		c.Set("email", claims.Email)
@@ -151,8 +151,8 @@ func GetCurrentUser(c *gin.Context) (*models.User, bool) {
 		return nil, false
 	}
 
-	if userObj, ok := user.(models.User); ok {
-		return &userObj, true
+	if userObj, ok := user.(*models.User); ok {
+		return userObj, true
 	}
 
 	return nil, false
