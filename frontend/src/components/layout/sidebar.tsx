@@ -27,9 +27,11 @@ const navigation = [
 interface SidebarProps {
   sidebarOpen: boolean
   setSidebarOpen: (open: boolean) => void
+  logoImage?: string
+  logoAlt?: string
 }
 
-export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
+export function Sidebar({ sidebarOpen, setSidebarOpen, logoImage, logoAlt = "Logo" }: SidebarProps) {
   const [popupOpen, setPopupOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<typeof navigation[0] | null>(null)
 
@@ -63,10 +65,18 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
               <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
                 <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3 bg-slate-800">
                   <div className="flex h-14 shrink-0 items-center justify-center">
-                    {/* HubSpot-like logo */}
-                    <div className="w-6 h-6 bg-orange-500 rounded-sm flex items-center justify-center">
-                      <div className="w-3 h-3 bg-white rounded-sm"></div>
-                    </div>
+                    {/* Logo */}
+                    {logoImage ? (
+                      <img 
+                        src={logoImage} 
+                        alt={logoAlt}
+                        className="w-8 h-8 object-contain"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 bg-orange-500 rounded-sm flex items-center justify-center">
+                        <div className="w-3 h-3 bg-white rounded-sm"></div>
+                      </div>
+                    )}
                   </div>
                   
                   <nav className="flex flex-1 flex-col">
@@ -111,13 +121,21 @@ export function Sidebar({ sidebarOpen, setSidebarOpen }: SidebarProps) {
       </SidebarPopup>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-16 lg:flex-col">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-16 lg:flex-col">
         <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3 bg-slate-800">
           <div className="flex h-14 shrink-0 items-center justify-center">
-            {/* HubSpot-like logo */}
-            <div className="w-6 h-6 bg-orange-500 rounded-sm flex items-center justify-center">
-              <div className="w-3 h-3 bg-white rounded-sm"></div>
-            </div>
+            {/* Logo */}
+            {logoImage ? (
+              <img 
+                src={logoImage} 
+                alt={logoAlt}
+                className="w-8 h-8 object-contain"
+              />
+            ) : (
+              <div className="w-6 h-6 bg-orange-500 rounded-sm flex items-center justify-center">
+                <div className="w-3 h-3 bg-white rounded-sm"></div>
+              </div>
+            )}
           </div>
           
                             <nav className="flex flex-1 flex-col">

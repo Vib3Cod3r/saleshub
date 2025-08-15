@@ -45,17 +45,24 @@ export function MainContent({ children }: MainContentProps) {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-gray-50">
-        <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      <div className="min-h-screen bg-slate-800">
+        <Sidebar 
+          sidebarOpen={sidebarOpen} 
+          setSidebarOpen={setSidebarOpen}
+          logoImage="/c74beb39e6a8fc1b9bd06592c750b4c9(1).png"
+          logoAlt="SalesHub Logo"
+        />
         
         <div className="lg:pl-16">
           <Header onMenuClick={() => setSidebarOpen(true)} />
           
-          <main className="py-6">
-            <div className="px-4 sm:px-6 lg:px-8">
-              {children}
-            </div>
-          </main>
+          <div className="lg:rounded-tl-2xl bg-white min-h-screen">
+            <main className="py-6 pt-0">
+              <div className="px-4 sm:px-6 lg:px-8">
+                {children}
+              </div>
+            </main>
+          </div>
         </div>
       </div>
     </ErrorBoundary>

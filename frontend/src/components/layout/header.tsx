@@ -26,9 +26,9 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
-    <header className="text-white shadow-sm bg-slate-800">
-      <div className="flex h-14 items-center justify-between px-4">
-        <div className="flex items-center space-x-4">
+    <header className="text-white shadow-sm bg-slate-800 relative z-50">
+      <div className="flex h-14 items-center justify-between px-4 lg:px-0">
+        <div className="flex items-center space-x-4 lg:space-x-0">
           <button
             type="button"
             className="text-white hover:text-gray-300 lg:hidden"
@@ -38,25 +38,19 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Bars3Icon className="h-5 w-5" aria-hidden="true" />
           </button>
           
-          {/* Search */}
-          <div className="flex items-center space-x-3">
+          {/* Search and Plus button - positioned at the very left edge on desktop */}
+          <div className="flex items-center space-x-3 lg:ml-0 lg:pl-0">
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                 <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" aria-hidden="true" />
               </div>
               <input
                 type="text"
-                className="block w-80 rounded-lg border-0 py-2 pl-10 pr-3 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-orange-500 text-sm leading-5 bg-slate-700"
-                placeholder="Search HubSpot"
+                className="block w-80 rounded-lg border-0 py-2 pl-10 pr-3 text-white placeholder:text-gray-400 focus:outline-none text-sm leading-5 bg-slate-700"
+                placeholder="Search SalesHub"
               />
             </div>
             
-            {/* Keyboard shortcut button */}
-            <button className="px-2 py-1 text-xs text-gray-300 rounded border border-gray-600 hover:bg-slate-700 transition-colors duration-200 bg-slate-700">
-              Ctrl K
-            </button>
-            
-            {/* Plus button */}
             <button className="p-1.5 text-white hover:text-gray-300 rounded-full hover:bg-slate-700 transition-colors duration-200">
               <PlusIcon className="h-4 w-4" aria-hidden="true" />
             </button>
