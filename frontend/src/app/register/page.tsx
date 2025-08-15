@@ -38,14 +38,14 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      await register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password
-      })
+      await register(
+        formData.email,
+        formData.password,
+        formData.firstName,
+        formData.lastName
+      )
       router.push('/')
-    } catch (_err) {
+    } catch {
       setError('Registration failed. Please try again.')
     } finally {
       setLoading(false)

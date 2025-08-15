@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { handleErrorBoundaryError } from '@/lib/error-handler'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -23,7 +24,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    handleErrorBoundaryError(error, errorInfo)
   }
 
   render() {
