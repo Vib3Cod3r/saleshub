@@ -51,19 +51,11 @@ export function SidebarPopup({ isOpen, onClose, title, children }: SidebarPopupP
                   }}
                 >
                   <div className="flex h-full flex-col">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                    {/* Title aligned with content */}
+                    <div className="px-3 pt-4 pb-4">
                       <Dialog.Title className="text-lg font-semibold text-gray-900">
                         {title}
                       </Dialog.Title>
-                      <button
-                        type="button"
-                        className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
-                        onClick={onClose}
-                      >
-                        <span className="sr-only">Close panel</span>
-                        <XMarkIcon className="h-6 w-6" aria-hidden="true" />
-                      </button>
                     </div>
 
                     {/* Content */}

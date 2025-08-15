@@ -22,12 +22,12 @@ interface PopupContentProps {
 export function PopupContent({ type, onClose }: PopupContentProps) {
   const getContent = () => {
     switch (type) {
-      case 'Dashboard':
+      case 'CRM':
         return {
-          title: 'Dashboard',
+          title: 'CRM',
           sections: [
             {
-              title: 'CRM',
+              title: '',
               items: [
                 { icon: UserGroupIcon, label: 'Leads', action: 'link', href: '/leads' },
                 { icon: UserGroupIcon, label: 'Contacts', action: 'link', href: '/contacts' },
@@ -43,19 +43,14 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
           title: 'Marketing',
           sections: [
             {
-              title: 'Campaigns',
+              title: '',
               items: [
-                { icon: PlusIcon, label: 'Create Campaign', action: 'primary' },
-                { icon: ChartBarIcon, label: 'View Analytics', action: 'secondary' },
-                { icon: FunnelIcon, label: 'Lead Scoring', action: 'secondary' },
-              ]
-            },
-            {
-              title: 'Tools',
-              items: [
-                { icon: DocumentTextIcon, label: 'Email Templates', action: 'secondary' },
-                { icon: UserGroupIcon, label: 'Contact Lists', action: 'secondary' },
-                { icon: CogIcon, label: 'Automation', action: 'secondary' },
+                { icon: PlusIcon, label: 'Create Campaign', action: 'link', href: '/marketing/campaigns' },
+                { icon: ChartBarIcon, label: 'View Analytics', action: 'link', href: '/marketing/analytics' },
+                { icon: FunnelIcon, label: 'Lead Scoring', action: 'link', href: '/marketing/lead-scoring' },
+                { icon: DocumentTextIcon, label: 'Email Templates', action: 'link', href: '/marketing/templates' },
+                { icon: UserGroupIcon, label: 'Contact Lists', action: 'link', href: '/marketing/lists' },
+                { icon: CogIcon, label: 'Automation', action: 'link', href: '/marketing/automation' },
               ]
             }
           ]
@@ -65,19 +60,14 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
           title: 'Documents',
           sections: [
             {
-              title: 'Files',
+              title: '',
               items: [
-                { icon: PlusIcon, label: 'Upload File', action: 'primary' },
-                { icon: DocumentTextIcon, label: 'Recent Files', action: 'secondary' },
-                { icon: StarIcon, label: 'Starred Files', action: 'secondary' },
-              ]
-            },
-            {
-              title: 'Templates',
-              items: [
-                { icon: DocumentTextIcon, label: 'Contract Templates', action: 'secondary' },
-                { icon: DocumentTextIcon, label: 'Proposal Templates', action: 'secondary' },
-                { icon: DocumentTextIcon, label: 'Invoice Templates', action: 'secondary' },
+                { icon: PlusIcon, label: 'Upload File', action: 'link', href: '/documents/upload' },
+                { icon: DocumentTextIcon, label: 'Recent Files', action: 'link', href: '/documents/recent' },
+                { icon: StarIcon, label: 'Starred Files', action: 'link', href: '/documents/starred' },
+                { icon: DocumentTextIcon, label: 'Contract Templates', action: 'link', href: '/documents/contracts' },
+                { icon: DocumentTextIcon, label: 'Proposal Templates', action: 'link', href: '/documents/proposals' },
+                { icon: DocumentTextIcon, label: 'Invoice Templates', action: 'link', href: '/documents/invoices' },
               ]
             }
           ]
@@ -87,19 +77,14 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
           title: 'E-commerce',
           sections: [
             {
-              title: 'Products',
+              title: '',
               items: [
-                { icon: PlusIcon, label: 'Add Product', action: 'primary' },
-                { icon: ChartBarIcon, label: 'Product Analytics', action: 'secondary' },
-                { icon: CogIcon, label: 'Inventory Management', action: 'secondary' },
-              ]
-            },
-            {
-              title: 'Orders',
-              items: [
-                { icon: ClockIcon, label: 'Recent Orders', action: 'secondary' },
-                { icon: StarIcon, label: 'Pending Orders', action: 'secondary' },
-                { icon: ChartBarIcon, label: 'Sales Reports', action: 'secondary' },
+                { icon: PlusIcon, label: 'Add Product', action: 'link', href: '/ecommerce/products' },
+                { icon: ChartBarIcon, label: 'Product Analytics', action: 'link', href: '/ecommerce/analytics' },
+                { icon: CogIcon, label: 'Inventory Management', action: 'link', href: '/ecommerce/inventory' },
+                { icon: ClockIcon, label: 'Recent Orders', action: 'link', href: '/ecommerce/orders' },
+                { icon: StarIcon, label: 'Pending Orders', action: 'link', href: '/ecommerce/pending' },
+                { icon: ChartBarIcon, label: 'Sales Reports', action: 'link', href: '/ecommerce/reports' },
               ]
             }
           ]
@@ -109,19 +94,14 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
           title: 'Payments',
           sections: [
             {
-              title: 'Transactions',
+              title: '',
               items: [
-                { icon: PlusIcon, label: 'New Payment', action: 'primary' },
-                { icon: ClockIcon, label: 'Recent Transactions', action: 'secondary' },
-                { icon: ChartBarIcon, label: 'Payment Analytics', action: 'secondary' },
-              ]
-            },
-            {
-              title: 'Settings',
-              items: [
-                { icon: CogIcon, label: 'Payment Methods', action: 'secondary' },
-                { icon: CogIcon, label: 'Billing Settings', action: 'secondary' },
-                { icon: CogIcon, label: 'Tax Configuration', action: 'secondary' },
+                { icon: PlusIcon, label: 'New Payment', action: 'link', href: '/payments/new' },
+                { icon: ClockIcon, label: 'Recent Transactions', action: 'link', href: '/payments/transactions' },
+                { icon: ChartBarIcon, label: 'Payment Analytics', action: 'link', href: '/payments/analytics' },
+                { icon: CogIcon, label: 'Payment Methods', action: 'link', href: '/payments/methods' },
+                { icon: CogIcon, label: 'Billing Settings', action: 'link', href: '/payments/billing' },
+                { icon: CogIcon, label: 'Tax Configuration', action: 'link', href: '/payments/tax' },
               ]
             }
           ]
@@ -131,19 +111,14 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
           title: 'Bookmarks',
           sections: [
             {
-              title: 'Quick Access',
+              title: '',
               items: [
-                { icon: StarIcon, label: 'Frequently Used', action: 'secondary' },
-                { icon: ClockIcon, label: 'Recently Viewed', action: 'secondary' },
-                { icon: PlusIcon, label: 'Add Bookmark', action: 'primary' },
-              ]
-            },
-            {
-              title: 'Categories',
-              items: [
-                { icon: UserGroupIcon, label: 'Contacts', action: 'secondary' },
-                { icon: DocumentTextIcon, label: 'Documents', action: 'secondary' },
-                { icon: ChartBarIcon, label: 'Reports', action: 'secondary' },
+                { icon: StarIcon, label: 'Frequently Used', action: 'link', href: '/bookmarks/frequent' },
+                { icon: ClockIcon, label: 'Recently Viewed', action: 'link', href: '/bookmarks/recent' },
+                { icon: PlusIcon, label: 'Add Bookmark', action: 'link', href: '/bookmarks/add' },
+                { icon: UserGroupIcon, label: 'Contacts', action: 'link', href: '/bookmarks/contacts' },
+                { icon: DocumentTextIcon, label: 'Documents', action: 'link', href: '/bookmarks/documents' },
+                { icon: ChartBarIcon, label: 'Reports', action: 'link', href: '/bookmarks/reports' },
               ]
             }
           ]
@@ -153,11 +128,11 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
           title: type,
           sections: [
             {
-              title: 'Actions',
+              title: '',
               items: [
-                { icon: PlusIcon, label: 'Create New', action: 'primary' },
-                { icon: PlusIcon, label: 'Search', action: 'secondary' },
-                { icon: CogIcon, label: 'Settings', action: 'secondary' },
+                { icon: PlusIcon, label: 'Create New', action: 'link', href: '/create' },
+                { icon: PlusIcon, label: 'Search', action: 'link', href: '/search' },
+                { icon: CogIcon, label: 'Settings', action: 'link', href: '/settings' },
               ]
             }
           ]
@@ -173,12 +148,14 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
       <div className="flex-1 overflow-y-auto">
         {content.sections.map((section, sectionIndex) => (
           <div key={sectionIndex} className="p-4 border-b border-gray-100 last:border-b-0">
-            <h3 className={cn(
-              "text-sm font-semibold text-gray-900 mb-3",
-              section.title === 'CRM' && "font-bold text-base"
-            )}>
-              {section.title}
-            </h3>
+            {section.title && (
+              <h3 className={cn(
+                "text-sm font-semibold text-gray-900 mb-3",
+                section.title === 'CRM' && "font-bold text-base"
+              )}>
+                {section.title}
+              </h3>
+            )}
             <div className="space-y-[36px]">
               {section.items.map((item, itemIndex) => (
                 item.action === 'link' ? (
@@ -186,16 +163,15 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
                     key={itemIndex}
                     href={item.href}
                     onClick={onClose}
-                    className="w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors duration-200 text-gray-700 hover:bg-gray-50"
+                    className="w-full flex items-center px-3 py-2 text-sm rounded-md transition-colors duration-200 text-gray-700 hover:bg-gray-50"
                   >
-                    <item.icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                     <span className="flex-1 text-left">{item.label}</span>
                   </Link>
                 ) : (
                   <button
                     key={itemIndex}
                     className={cn(
-                      'w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors duration-200',
+                      'w-full flex items-center px-3 py-2 text-sm rounded-md transition-colors duration-200',
                       item.action === 'primary' 
                         ? 'bg-orange-50 text-orange-700 hover:bg-orange-100' 
                         : item.action === 'secondary'
@@ -203,7 +179,6 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
                         : 'text-gray-500 hover:bg-gray-50'
                     )}
                   >
-                    <item.icon className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.action === 'primary' && (
                       <EllipsisHorizontalIcon className="h-4 w-4 text-orange-500" aria-hidden="true" />
@@ -216,15 +191,7 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
         ))}
       </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>Quick access to {content.title.toLowerCase()}</span>
-          <button className="text-orange-600 hover:text-orange-700 font-medium">
-            View All
-          </button>
-        </div>
-      </div>
+      {/* Footer removed for all popup menus */}
     </div>
   )
 }

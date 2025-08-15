@@ -17,7 +17,7 @@ import { PopupContent } from './popup-content'
 
 const navigation = [
   { name: 'Bookmarks', href: '/bookmarks', icon: BookmarkIcon },
-  { name: 'Dashboard', href: '/', icon: Squares2X2Icon },
+  { name: 'CRM', href: '/', icon: Squares2X2Icon },
   { name: 'Marketing', href: '/marketing', icon: MegaphoneIcon },
   { name: 'Documents', href: '/documents', icon: DocumentTextIcon },
   { name: 'E-commerce', href: '/ecommerce', icon: ShoppingCartIcon },
