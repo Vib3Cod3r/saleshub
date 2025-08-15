@@ -53,11 +53,11 @@ export function MainContent({ children }: MainContentProps) {
           logoAlt="SalesHub Logo"
         />
         
-        <div className="lg:pl-16">
+        <div className="lg:pl-16 flex flex-col h-screen">
           <Header onMenuClick={() => setSidebarOpen(true)} />
           
-          <div className="lg:rounded-tl-2xl bg-white min-h-screen">
-            <main className="py-6 pt-0">
+          <div className="flex-1 lg:rounded-tl-2xl bg-white overflow-auto">
+            <main className="py-6">
               <div className="px-4 sm:px-6 lg:px-8">
                 {children}
               </div>

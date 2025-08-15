@@ -26,7 +26,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
-    <header className="text-white shadow-sm bg-slate-800 relative z-50">
+    <header className="text-white shadow-lg bg-slate-800">
       <div className="flex h-14 items-center justify-between px-4 lg:px-0">
         <div className="flex items-center space-x-4 lg:space-x-0">
           <button
