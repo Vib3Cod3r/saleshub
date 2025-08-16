@@ -26,7 +26,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
-    <header className="text-white shadow-lg bg-slate-800 pr-9">
+    <header className="text-white shadow-lg pr-9" style={{ backgroundColor: '#402D50' }}>
       <div className="flex h-14 items-center justify-between px-4 lg:px-0">
         <div className="flex items-center space-x-4 lg:space-x-0">
           <button
@@ -98,7 +98,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             >
               <span className="sr-only">Notifications</span>
               <BellIcon className="h-5 w-5" aria-hidden="true" />
-              <span className="absolute top-1 right-1 h-4 w-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+              <span className="absolute top-1 right-1 h-4 w-4 text-xs rounded-full flex items-center justify-center" style={{ backgroundColor: '#25E04E', color: '#402D50' }}>
                 1
               </span>
             </button>
@@ -106,7 +106,7 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           {/* Copilot */}
           <div className="flex items-center space-x-2">
-            <StarIcon className="h-4 w-4 text-orange-500" aria-hidden="true" />
+            <StarIcon className="h-4 w-4" style={{ color: '#25E04E' }} aria-hidden="true" />
             <span className="text-sm font-medium">Copilot</span>
           </div>
 

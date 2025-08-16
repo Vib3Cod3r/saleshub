@@ -63,7 +63,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, logoImage, logoAlt = "Log
               leaveTo="-translate-x-full"
             >
               <Dialog.Panel className="relative mr-16 flex w-full max-w-xs flex-1">
-                <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3 bg-slate-800">
+                <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3" style={{ backgroundColor: '#402D50' }}>
                   <div className="flex h-14 shrink-0 items-center justify-center">
                     {/* Logo */}
                     {logoImage ? (
@@ -122,7 +122,7 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, logoImage, logoAlt = "Log
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-16 lg:flex-col">
-        <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3 bg-slate-800">
+        <div className="flex grow flex-col gap-y-4 overflow-y-auto px-2 pb-3" style={{ backgroundColor: '#402D50' }}>
           <div className="flex h-14 shrink-0 items-center justify-center">
             {/* Logo */}
             {logoImage ? (

@@ -5,15 +5,15 @@ The following layout components are protected from changes unless explicitly unl
 
 ### Header Component
 - **File**: `frontend/src/components/layout/header.tsx`
-- **Status**: PROTECTED
+- **Status**: UNLOCKED
 - **Last Modified**: [Current Date]
-- **Reason**: User is satisfied with current header design and functionality
+- **Reason**: User requested color change to #372D50
 
 ### Sidebar Component  
 - **File**: `frontend/src/components/layout/sidebar.tsx`
-- **Status**: PROTECTED
+- **Status**: UNLOCKED
 - **Last Modified**: [Current Date]
-- **Reason**: User is satisfied with current sidebar design and functionality
+- **Reason**: User requested color change to #372D50
 
 ### Main Content Layout
 - **File**: `frontend/src/components/layout/main-content.tsx`
@@ -29,8 +29,8 @@ To make changes to protected components:
 ## Current Layout Structure
 ```
 MainContent (main-content.tsx)
-├── Sidebar (sidebar.tsx) - PROTECTED
-├── Header (header.tsx) - PROTECTED  
+├── Sidebar (sidebar.tsx) - UNLOCKED
+├── Header (header.tsx) - UNLOCKED  
 └── Main Content Area (children)
 ```
 
