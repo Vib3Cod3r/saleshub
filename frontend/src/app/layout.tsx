@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/hooks/use-auth";
 import { QueryProvider } from "@/providers/query-provider";
 import { MainContent } from "@/components/layout/main-content";
+import { ErrorLogViewer } from "@/components/debug/error-log-viewer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
             <MainContent>
               {children}
             </MainContent>
+            <ErrorLogViewer />
           </AuthProvider>
         </QueryProvider>
       </body>

@@ -38,11 +38,11 @@ export default function RegisterPage() {
     setLoading(true)
 
     try {
-      await register(
-        formData.email,
-        formData.password,
-        formData.firstName,
-        formData.lastName
+      await register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName}
       )
       router.push('/')
     } catch {

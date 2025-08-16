@@ -68,7 +68,6 @@ const mockCompanies: Company[] = [
 
 export default function CompaniesPage() {
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([])
-  const [currentView, setCurrentView] = useState('All companies')
   const [searchQuery, setSearchQuery] = useState('')
 
   const handleSelectAll = () => {

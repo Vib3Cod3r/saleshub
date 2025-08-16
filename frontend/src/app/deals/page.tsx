@@ -48,7 +48,6 @@ const mockDeals: Deal[] = [
 
 export default function DealsPage() {
   const [selectedDeals, setSelectedDeals] = useState<string[]>([])
-  const [currentView, setCurrentView] = useState('All deals')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list')
 

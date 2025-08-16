@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/use-auth'
+import { errorLogger } from '@/lib/error-logger'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -20,10 +21,14 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      errorLogger.log('auth', 'Login form submitted', { email })
       await login(email, password)
       router.push('/')
     } catch (error) {
-      console.error('Login error:', error)
+      errorLogger.log('auth', 'Login form error', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
+      })
       if (error instanceof Error) {
         setError(error.message || 'Invalid email or password')
       } else {

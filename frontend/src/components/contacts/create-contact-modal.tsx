@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Dialog } from '@headlessui/react'
 import { XMarkIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 
 interface CreateContactModalProps {

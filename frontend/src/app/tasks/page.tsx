@@ -55,7 +55,6 @@ const mockTasks: Task[] = [
 
 export default function TasksPage() {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
-  const [currentView, setCurrentView] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [showCalendarBanner, setShowCalendarBanner] = useState(true)
 

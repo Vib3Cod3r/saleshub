@@ -13,6 +13,7 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
 import { LockClosedIcon } from '@heroicons/react/24/solid'
+import { CreateContactModal } from '@/components/contacts/create-contact-modal'
 
 interface Contact {
   id: string
@@ -80,8 +81,8 @@ const mockContacts: Contact[] = [
 
 export default function ContactsPage() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
-  const [currentView, setCurrentView] = useState('All contacts')
   const [searchQuery, setSearchQuery] = useState('')
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   const handleSelectAll = () => {
     if (selectedContacts.length === mockContacts.length) {
@@ -97,6 +98,14 @@ export default function ContactsPage() {
         ? prev.filter(id => id !== contactId)
         : [...prev, contactId]
     )
+  }
+
+  const handleCreateSuccess = () => {
+    setIsCreateModalOpen(false)
+    // Here you would typically refresh your contacts list
+    // If using React Query: queryClient.invalidateQueries(['contacts'])
+    console.log('Contact created successfully!')
+    // You could also show a success toast notification here
   }
 
   return (
@@ -124,7 +133,11 @@ export default function ContactsPage() {
             Import
           </button>
           
-          <button className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600">
+          {/* Updated Create Contact Button - Now Functional */}
+          <button 
+            onClick={() => setIsCreateModalOpen(true)}
+            className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600 transition-colors duration-200"
+          >
             Create contact
           </button>
         </div>
@@ -178,7 +191,7 @@ export default function ContactsPage() {
         <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Search name, phone, emai"
+          placeholder="Search name, phone, email"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -258,7 +271,7 @@ export default function ContactsPage() {
               </th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 <div className="flex items-center space-x-1">
-                  <span>LAST ACTIVITY DATE (G...)</span>
+                  <span>LAST ACTIVITY DATE (GMT+8)</span>
                   <div className="flex flex-col">
                     <ChevronUpIcon className="h-3 w-3" />
                     <ChevronDown className="h-3 w-3" />
@@ -355,6 +368,13 @@ export default function ContactsPage() {
           <ChevronDownIcon className="h-4 w-4 text-gray-400" />
         </div>
       </div>
+
+      {/* Create Contact Modal */}
+      <CreateContactModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateSuccess}
+      />
     </div>
   )
 }
