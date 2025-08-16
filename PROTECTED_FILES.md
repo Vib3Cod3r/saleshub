@@ -12,9 +12,9 @@ This document lists all files that are protected from AI modifications. These fi
 ## Protected Frontend Files
 
 ### Pages
-- `frontend/src/app/deals/page.tsx` - Deals listing page with table and pagination
-- `frontend/src/app/contacts/page.tsx` - Contacts management page
-- `frontend/src/app/companies/page.tsx` - Companies management page
+- `frontend/src/app/deals/page.tsx` - Deals management page (CRM-style interface with filters, table, and pagination)
+- `frontend/src/app/contacts/page.tsx` - Contacts management page (CRM-style interface with filters, table, and pagination)
+- `frontend/src/app/companies/page.tsx` - Companies management page (CRM-style interface with filters, table, and pagination)
 
 ### Layout Components
 - `frontend/src/components/layout/header.tsx` - Main header component (NEEDS TO BE CREATED)
