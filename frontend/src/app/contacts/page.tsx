@@ -45,7 +45,7 @@ export default function ContactsPage() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [currentView, setCurrentView] = useState('All contacts')
   const [searchQuery, setSearchQuery] = useState('')
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [allContacts, setAllContacts] = useState<Contact[]>([])
   const [pagination, setPagination] = useState({
     page: 1,
     total: 0,
@@ -60,23 +60,26 @@ export default function ContactsPage() {
     direction: 'asc'
   })
 
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery)
-    }, 500) // 500ms delay
+  // We no longer need to fetch contacts on page change since we're using allContacts
+  // useEffect(() => {
+  //   fetchContacts()
+  // }, [pagination.page])
 
-    return () => clearTimeout(timer)
-  }, [searchQuery])
+  // Fetch all contacts for search functionality
+  useEffect(() => {
+    const loadInitialData = async () => {
+      setLoading(true)
+      await fetchAllContacts()
+      await fetchContacts() // Still fetch initial page data for pagination info
+      setLoading(false)
+    }
+    loadInitialData()
+  }, [])
 
   // Reset to first page when search changes
   useEffect(() => {
     setPagination(prev => ({ ...prev, page: 1 }))
-  }, [debouncedSearchQuery])
-
-  useEffect(() => {
-    fetchContacts()
-  }, [pagination.page, debouncedSearchQuery])
+  }, [searchQuery])
 
   const fetchContacts = async () => {
     try {
@@ -89,16 +92,7 @@ export default function ContactsPage() {
         return
       }
 
-      const searchParams = new URLSearchParams({
-        page: pagination.page.toString(),
-        limit: pagination.limit.toString()
-      })
-      
-      if (debouncedSearchQuery.trim()) {
-        searchParams.append('search', debouncedSearchQuery.trim())
-      }
-
-      const response = await fetch(`http://localhost:8089/api/crm/contacts?${searchParams.toString()}`, {
+      const response = await fetch(`http://localhost:8089/api/crm/contacts?page=${pagination.page}&limit=${pagination.limit}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -125,11 +119,39 @@ export default function ContactsPage() {
     }
   }
 
+  const fetchAllContacts = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      
+      if (!token) {
+        return
+      }
+
+      const response = await fetch(`http://localhost:8089/api/crm/contacts?limit=1000`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error('Failed to fetch all contacts for search')
+        return
+      }
+
+      const data: ContactsResponse = await response.json()
+      setAllContacts(data.data)
+    } catch (err) {
+      console.error('Error fetching all contacts for search:', err)
+    }
+  }
+
   const handleSelectAll = () => {
-    if (selectedContacts.length === contacts.length) {
+    const filteredContacts = getFilteredContacts()
+    if (selectedContacts.length === filteredContacts.length) {
       setSelectedContacts([])
     } else {
-      setSelectedContacts(contacts.map(contact => contact.id))
+      setSelectedContacts(filteredContacts.map(contact => contact.id))
     }
   }
 
@@ -174,10 +196,27 @@ export default function ContactsPage() {
     setSortConfig({ key, direction })
   }
 
-  const getSortedContacts = () => {
-    if (!sortConfig.key) return contacts
+  const getFilteredContacts = () => {
+    if (!searchQuery.trim()) return allContacts
 
-    return [...contacts].sort((a, b) => {
+    const query = searchQuery.toLowerCase().trim()
+    
+    return allContacts.filter(contact => {
+      const name = getContactName(contact).toLowerCase()
+      const email = getContactEmail(contact).toLowerCase()
+      const phone = getContactPhone(contact).toLowerCase()
+      
+      return name.includes(query) || 
+             email.includes(query) || 
+             phone.includes(query)
+    })
+  }
+
+  const getSortedContacts = () => {
+    const filteredContacts = getFilteredContacts()
+    if (!sortConfig.key) return filteredContacts
+
+    const sorted = [...filteredContacts].sort((a, b) => {
       let aValue: string | number = ''
       let bValue: string | number = ''
 
@@ -214,6 +253,15 @@ export default function ContactsPage() {
       }
       return 0
     })
+
+    return sorted
+  }
+
+  const getPaginatedContacts = () => {
+    const sortedContacts = getSortedContacts()
+    const startIndex = (pagination.page - 1) * pagination.limit
+    const endIndex = startIndex + pagination.limit
+    return sortedContacts.slice(startIndex, endIndex)
   }
 
   const formatDate = (dateString: string) => {
@@ -313,7 +361,9 @@ export default function ContactsPage() {
 
           {/* Right side - Records count and Actions */}
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-500">{pagination.total} records</span>
+            <span className="text-sm text-gray-500">
+              {getFilteredContacts().length} records
+            </span>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Export</button>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Edit columns</button>
           </div>
@@ -327,7 +377,7 @@ export default function ContactsPage() {
                 <th className="px-4 py-3 text-left">
                   <input
                     type="checkbox"
-                    checked={selectedContacts.length === contacts.length && contacts.length > 0}
+                    checked={selectedContacts.length === getFilteredContacts().length && getFilteredContacts().length > 0}
                     onChange={handleSelectAll}
                     className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                   />
@@ -480,7 +530,7 @@ export default function ContactsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {getSortedContacts().map((contact) => (
+              {getPaginatedContacts().map((contact) => (
                 <tr key={contact.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <input
@@ -542,9 +592,10 @@ export default function ContactsPage() {
           {/* Page Numbers */}
           <div className="flex items-center space-x-1">
             {(() => {
-              const totalPages = pagination.totalPages;
-              const currentPage = pagination.page;
-              const pages = [];
+              const filteredContacts = getFilteredContacts()
+              const totalPages = Math.ceil(filteredContacts.length / pagination.limit)
+              const currentPage = pagination.page
+              const pages = []
               
               // If total pages is 10 or less, show all pages
               if (totalPages <= 10) {
@@ -604,7 +655,7 @@ export default function ContactsPage() {
           {/* Next Button */}
           <button 
             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            disabled={pagination.page >= pagination.totalPages}
+            disabled={pagination.page >= Math.ceil(getFilteredContacts().length / pagination.limit)}
             onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
           >
             Next
