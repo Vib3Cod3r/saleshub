@@ -1,8 +1,11 @@
 package config
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -13,22 +16,148 @@ import (
 
 var DB *gorm.DB
 
-// InitDatabase initializes the database connection
+// DatabaseLogger implements GORM's logger interface for comprehensive logging
+type DatabaseLogger struct {
+	SlowThreshold         time.Duration
+	SourceField           string
+	SkipErrRecordNotFound bool
+}
+
+// LogMode returns the logger mode
+func (l *DatabaseLogger) LogMode(logger.LogLevel) logger.Interface {
+	return l
+}
+
+// Info logs info level messages
+func (l *DatabaseLogger) Info(ctx context.Context, msg string, data ...interface{}) {
+	log.Printf("[DB-INFO] %s %v", msg, data)
+}
+
+// Warn logs warning level messages
+func (l *DatabaseLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
+	log.Printf("[DB-WARN] %s %v", msg, data)
+}
+
+// Error logs error level messages
+func (l *DatabaseLogger) Error(ctx context.Context, msg string, data ...interface{}) {
+	log.Printf("[DB-ERROR] %s %v", msg, data)
+}
+
+// Trace logs SQL queries with timing information
+func (l *DatabaseLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+	elapsed := time.Since(begin)
+	sql, rows := fc()
+
+	// Log all queries with timing
+	logEntry := fmt.Sprintf("[DB-QUERY] %s | Duration: %v | Rows: %d", sql, elapsed, rows)
+
+	if err != nil {
+		log.Printf("%s | Error: %v", logEntry, err)
+	} else if elapsed > l.SlowThreshold && l.SlowThreshold != 0 {
+		log.Printf("%s | SLOW QUERY", logEntry)
+	} else {
+		log.Printf(logEntry)
+	}
+}
+
+// DatabaseMetrics tracks database performance metrics
+type DatabaseMetrics struct {
+	TotalQueries  int64
+	SlowQueries   int64
+	FailedQueries int64
+	TotalDuration time.Duration
+	LastQueryTime time.Time
+}
+
+var metrics = &DatabaseMetrics{}
+
+// GetDatabaseMetrics returns current database metrics
+func GetDatabaseMetrics() *DatabaseMetrics {
+	return metrics
+}
+
+// LogDatabaseOperation logs database operations with context
+func LogDatabaseOperation(operation, table, tenantID string, duration time.Duration, err error) {
+	metrics.TotalQueries++
+	metrics.TotalDuration += duration
+	metrics.LastQueryTime = time.Now()
+
+	if err != nil {
+		metrics.FailedQueries++
+		log.Printf("[DB-OP] %s | Table: %s | Tenant: %s | Duration: %v | Error: %v",
+			operation, table, tenantID, duration, err)
+	} else {
+		log.Printf("[DB-OP] %s | Table: %s | Tenant: %s | Duration: %v | Success",
+			operation, table, tenantID, duration)
+	}
+}
+
+// InitDatabase initializes the database connection with comprehensive logging
 func InitDatabase() {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		dsn = "postgresql://postgres:Miyako2020@localhost:5432/sales_crm?sslmode=disable"
 	}
 
-	var err error
-	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
-	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+	// Initialize enhanced GORM logging
+	gormConfig := DefaultGormLoggingConfig()
+	InitializeGormLogging(gormConfig)
+
+	// Create custom logger with slow query threshold
+	dbLogger := &DatabaseLogger{
+		SlowThreshold:         200 * time.Millisecond, // Log queries slower than 200ms
+		SourceField:           "source",
+		SkipErrRecordNotFound: false,
 	}
 
-	log.Println("Database connected successfully")
+	var err error
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: dbLogger,
+	})
+	if err != nil {
+		log.Fatal("[DB-ERROR] Failed to connect to database:", err)
+	}
+
+	// Get underlying SQL DB for connection pool stats
+	sqlDB, err := DB.DB()
+	if err != nil {
+		log.Fatal("[DB-ERROR] Failed to get underlying SQL DB:", err)
+	}
+
+	// Configure connection pool
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	log.Printf("[DB-INFO] Database connected successfully | DSN: %s", dsn)
+	log.Printf("[DB-INFO] Connection pool configured | MaxIdle: 10, MaxOpen: 100, MaxLifetime: 1h")
+
+	// Log connection pool stats
+	go logConnectionPoolStats(sqlDB)
+
+	// Log initial metrics
+	LogGormMetrics()
+}
+
+// logConnectionPoolStats periodically logs connection pool statistics
+func logConnectionPoolStats(sqlDB interface{}) {
+	ticker := time.NewTicker(5 * time.Minute) // Log every 5 minutes
+	defer ticker.Stop()
+
+	for range ticker.C {
+		if db, ok := sqlDB.(interface {
+			Stats() struct {
+				MaxOpenConnections int
+				OpenConnections    int
+				InUse              int
+				Idle               int
+			}
+		}); ok {
+			stats := db.Stats()
+			log.Printf("[DB-STATS] Pool Stats | MaxOpen: %d, Open: %d, InUse: %d, Idle: %d",
+				stats.MaxOpenConnections, stats.OpenConnections, stats.InUse, stats.Idle)
+		}
+	}
 }
 
 // AutoMigrate runs database migrations

@@ -48,9 +48,9 @@ const nextConfig: NextConfig = {
     CUSTOM_KEY: process.env.CUSTOM_KEY,
   },
 
-  // Temporarily disable ESLint for build
+  // Enable ESLint for build
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 };
 

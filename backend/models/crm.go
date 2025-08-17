@@ -64,7 +64,7 @@ type Contact struct {
 	Department *string `json:"department"`
 
 	// Company relationship
-	CompanyID string   `json:"companyId" gorm:"type:uuid"`
+	CompanyID *string  `json:"companyId" gorm:"type:uuid;default:null"`
 	Company   *Company `json:"company" gorm:"foreignKey:CompanyID;references:ID"`
 
 	// Lead source tracking
@@ -102,6 +102,15 @@ type Contact struct {
 // TableName specifies the table name for Contact
 func (Contact) TableName() string {
 	return "contacts"
+}
+
+// BeforeCreate GORM hook to handle empty strings
+func (c *Contact) BeforeCreate(tx *gorm.DB) error {
+	// Convert empty string to nil for CompanyID
+	if c.CompanyID != nil && *c.CompanyID == "" {
+		c.CompanyID = nil
+	}
+	return nil
 }
 
 // Lead represents a potential customer

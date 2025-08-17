@@ -147,7 +147,7 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
       {/* Content Sections */}
       <div className="flex-1 overflow-y-auto">
         {content.sections.map((section, sectionIndex) => (
-          <div key={sectionIndex} className="p-4 border-b border-gray-100 last:border-b-0">
+          <div key={`section-${section.title || 'default'}-${sectionIndex.toString()}`} className="p-4 border-b border-gray-100 last:border-b-0">
             {section.title && (
               <h3 className={cn(
                 "text-sm font-semibold text-gray-900 mb-3",
@@ -160,7 +160,7 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
               {section.items.map((item, itemIndex) => (
                 item.action === 'link' ? (
                   <Link
-                    key={itemIndex}
+                    key={`item-${item.label}-${item.href}-${itemIndex.toString()}`}
                     href={item.href}
                     onClick={onClose}
                     className="w-full flex items-center px-3 py-2 text-sm rounded-md transition-colors duration-200 text-gray-700 hover:bg-gray-50"
@@ -169,7 +169,7 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
                   </Link>
                 ) : (
                   <button
-                    key={itemIndex}
+                    key={`button-${item.label}-${item.action}-${itemIndex.toString()}`}
                     className={cn(
                       'w-full flex items-center px-3 py-2 text-sm rounded-md transition-colors duration-200',
                       item.action === 'primary' 

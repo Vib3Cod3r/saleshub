@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/use-auth-provider'
 import { cn } from '@/lib/utils'
 
 export default function RegisterPage() {

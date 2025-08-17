@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider } from "@/hooks/use-auth-provider";
 import { QueryProvider } from "@/providers/query-provider";
 import { MainContent } from "@/components/layout/main-content";
 import { ErrorLogViewer } from "@/components/debug/error-log-viewer";

@@ -80,11 +80,12 @@ export function logError(error: AppError, context?: string): void {
 }
 
 // Error boundary error handler
-export function handleErrorBoundaryError(error: Error, _errorInfo: React.ErrorInfo): void {
+export function handleErrorBoundaryError(error: Error, errorInfo: React.ErrorInfo): void {
   logError(new AppError(error.message, 500, 'BOUNDARY_ERROR'), 'ErrorBoundary');
   
   // In production, you might want to send this to an error reporting service
   if (process.env.NODE_ENV === 'production') {
     // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
+    console.error('Error boundary caught error:', error, 'Error info:', errorInfo);
   }
 }

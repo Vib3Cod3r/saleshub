@@ -2,6 +2,7 @@
 
 import { Fragment, useState } from 'react'
 import { Dialog, Transition } from '@headlessui/react'
+import Image from 'next/image'
 import { 
   BookmarkIcon,
   Squares2X2Icon,
@@ -67,9 +68,11 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, logoImage, logoAlt = "Log
                   <div className="flex h-14 shrink-0 items-center justify-center">
                     {/* Logo */}
                     {logoImage ? (
-                      <img 
+                      <Image 
                         src={logoImage} 
                         alt={logoAlt}
+                        width={32}
+                        height={32}
                         className="w-8 h-8 object-contain"
                       />
                     ) : (
@@ -126,9 +129,11 @@ export function Sidebar({ sidebarOpen, setSidebarOpen, logoImage, logoAlt = "Log
           <div className="flex h-14 shrink-0 items-center justify-center">
             {/* Logo */}
             {logoImage ? (
-              <img 
+              <Image 
                 src={logoImage} 
                 alt={logoAlt}
+                width={32}
+                height={32}
                 className="w-8 h-8 object-contain"
               />
             ) : (

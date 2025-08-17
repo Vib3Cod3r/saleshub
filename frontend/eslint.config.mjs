@@ -12,14 +12,22 @@ const compat = new FlatCompat({
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   {
+    ignores: ["**/src/lib/api.ts"],
     rules: {
-      "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-unused-vars": "error",
       "react/no-unescaped-entities": "off",
-      "@typescript-eslint/no-non-null-assertion": "warn",
-      "react-hooks/exhaustive-deps": "warn",
+      "@typescript-eslint/no-non-null-assertion": "error",
+      "react-hooks/exhaustive-deps": "error",
       "react/jsx-no-useless-fragment": "warn",
       "react/no-array-index-key": "warn",
+      "@next/next/no-img-element": "warn",
+    },
+  },
+  {
+    files: ["**/src/lib/api.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ];

@@ -8,21 +8,21 @@ import (
 
 // PhoneNumberType represents types of phone numbers
 type PhoneNumberType struct {
-	ID          string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Name        string         `json:"name" gorm:"not null"`
-	Code        string         `json:"code" gorm:"uniqueIndex;not null"` // For system reference
-	Description *string        `json:"description"`
-	IsActive    bool           `json:"isActive" gorm:"default:true"`
-	
+	ID          string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Name        string  `json:"name" gorm:"not null"`
+	Code        string  `json:"code" gorm:"uniqueIndex;not null"` // For system reference
+	Description *string `json:"description"`
+	IsActive    bool    `json:"isActive" gorm:"default:true"`
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
+
 	// Relationships
 	PhoneNumbers []PhoneNumber `json:"phoneNumbers" gorm:"foreignKey:TypeID"`
 }
@@ -34,33 +34,27 @@ func (PhoneNumberType) TableName() string {
 
 // PhoneNumber represents a phone number for any entity
 type PhoneNumber struct {
-	ID        string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Number    string         `json:"number" gorm:"not null"`
-	Extension *string        `json:"extension"`
-	IsPrimary bool           `json:"isPrimary" gorm:"default:false"`
-	
+	ID        string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Number    string  `json:"number" gorm:"not null"`
+	Extension *string `json:"extension"`
+	IsPrimary bool    `json:"isPrimary" gorm:"default:false"`
+
 	// Type relationship
-	TypeID *string        `json:"typeId"`
+	TypeID *string          `json:"typeId"`
 	Type   *PhoneNumberType `json:"type" gorm:"foreignKey:TypeID"`
-	
+
 	// Polymorphic relationships
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
-	
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
-	// Direct relationships
-	Company *Company `json:"company" gorm:"foreignKey:EntityID"`
-	Contact *Contact `json:"contact" gorm:"foreignKey:EntityID"`
-	Lead    *Lead    `json:"lead" gorm:"foreignKey:EntityID"`
-	User    *User    `json:"user" gorm:"foreignKey:EntityID"`
 }
 
 // TableName specifies the table name for PhoneNumber
@@ -70,21 +64,21 @@ func (PhoneNumber) TableName() string {
 
 // EmailAddressType represents types of email addresses
 type EmailAddressType struct {
-	ID          string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Name        string         `json:"name" gorm:"not null"`
-	Code        string         `json:"code" gorm:"uniqueIndex;not null"` // For system reference
-	Description *string        `json:"description"`
-	IsActive    bool           `json:"isActive" gorm:"default:true"`
-	
+	ID          string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Name        string  `json:"name" gorm:"not null"`
+	Code        string  `json:"code" gorm:"uniqueIndex;not null"` // For system reference
+	Description *string `json:"description"`
+	IsActive    bool    `json:"isActive" gorm:"default:true"`
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
+
 	// Relationships
 	EmailAddresses []EmailAddress `json:"emailAddresses" gorm:"foreignKey:TypeID"`
 }
@@ -96,33 +90,27 @@ func (EmailAddressType) TableName() string {
 
 // EmailAddress represents an email address for any entity
 type EmailAddress struct {
-	ID        string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Email     string         `json:"email" gorm:"not null"`
-	IsPrimary bool           `json:"isPrimary" gorm:"default:false"`
-	IsVerified bool          `json:"isVerified" gorm:"default:false"`
-	
+	ID         string `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Email      string `json:"email" gorm:"not null"`
+	IsPrimary  bool   `json:"isPrimary" gorm:"default:false"`
+	IsVerified bool   `json:"isVerified" gorm:"default:false"`
+
 	// Type relationship
-	TypeID *string        `json:"typeId"`
+	TypeID *string           `json:"typeId"`
 	Type   *EmailAddressType `json:"type" gorm:"foreignKey:TypeID"`
-	
+
 	// Polymorphic relationships
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
-	
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
-	// Direct relationships
-	Company *Company `json:"company" gorm:"foreignKey:EntityID"`
-	Contact *Contact `json:"contact" gorm:"foreignKey:EntityID"`
-	Lead    *Lead    `json:"lead" gorm:"foreignKey:EntityID"`
-	User    *User    `json:"user" gorm:"foreignKey:EntityID"`
 }
 
 // TableName specifies the table name for EmailAddress
@@ -132,21 +120,21 @@ func (EmailAddress) TableName() string {
 
 // AddressType represents types of addresses
 type AddressType struct {
-	ID          string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Name        string         `json:"name" gorm:"not null"`
-	Code        string         `json:"code" gorm:"uniqueIndex;not null"` // For system reference
-	Description *string        `json:"description"`
-	IsActive    bool           `json:"isActive" gorm:"default:true"`
-	
+	ID          string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Name        string  `json:"name" gorm:"not null"`
+	Code        string  `json:"code" gorm:"uniqueIndex;not null"` // For system reference
+	Description *string `json:"description"`
+	IsActive    bool    `json:"isActive" gorm:"default:true"`
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
+
 	// Relationships
 	Addresses []Address `json:"addresses" gorm:"foreignKey:TypeID"`
 }
@@ -158,37 +146,31 @@ func (AddressType) TableName() string {
 
 // Address represents an address for any entity
 type Address struct {
-	ID         string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Street1    *string        `json:"street1"`
-	Street2    *string        `json:"street2"`
-	City       *string        `json:"city"`
-	State      *string        `json:"state"`
-	PostalCode *string        `json:"postalCode"`
-	Country    *string        `json:"country"`
-	IsPrimary  bool           `json:"isPrimary" gorm:"default:false"`
-	
+	ID         string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Street1    *string `json:"street1"`
+	Street2    *string `json:"street2"`
+	City       *string `json:"city"`
+	State      *string `json:"state"`
+	PostalCode *string `json:"postalCode"`
+	Country    *string `json:"country"`
+	IsPrimary  bool    `json:"isPrimary" gorm:"default:false"`
+
 	// Type relationship
-	TypeID *string    `json:"typeId"`
+	TypeID *string      `json:"typeId"`
 	Type   *AddressType `json:"type" gorm:"foreignKey:TypeID"`
-	
+
 	// Polymorphic relationships
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
-	
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
-	// Direct relationships
-	Company *Company `json:"company" gorm:"foreignKey:EntityID"`
-	Contact *Contact `json:"contact" gorm:"foreignKey:EntityID"`
-	Lead    *Lead    `json:"lead" gorm:"foreignKey:EntityID"`
-	User    *User    `json:"user" gorm:"foreignKey:EntityID"`
 }
 
 // TableName specifies the table name for Address
@@ -198,22 +180,22 @@ func (Address) TableName() string {
 
 // SocialMediaType represents types of social media platforms
 type SocialMediaType struct {
-	ID          string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Name        string         `json:"name" gorm:"not null"`
-	Code        string         `json:"code" gorm:"uniqueIndex;not null"` // For system reference
-	Icon        *string        `json:"icon"` // Icon class or URL
-	BaseURL     *string        `json:"baseUrl"` // Base URL for the platform
-	IsActive    bool           `json:"isActive" gorm:"default:true"`
-	
+	ID       string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Name     string  `json:"name" gorm:"not null"`
+	Code     string  `json:"code" gorm:"uniqueIndex;not null"` // For system reference
+	Icon     *string `json:"icon"`                             // Icon class or URL
+	BaseURL  *string `json:"baseUrl"`                          // Base URL for the platform
+	IsActive bool    `json:"isActive" gorm:"default:true"`
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
+
 	// Relationships
 	SocialMediaAccounts []SocialMediaAccount `json:"socialMediaAccounts" gorm:"foreignKey:TypeID"`
 }
@@ -225,33 +207,27 @@ func (SocialMediaType) TableName() string {
 
 // SocialMediaAccount represents a social media account for any entity
 type SocialMediaAccount struct {
-	ID        string         `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
-	Username  *string        `json:"username"` // Username or handle
-	URL       *string        `json:"url"`      // Full URL to profile
-	IsPrimary bool           `json:"isPrimary" gorm:"default:false"`
-	
+	ID        string  `json:"id" gorm:"primaryKey;type:uuid;default:gen_random_uuid()"`
+	Username  *string `json:"username"`
+	URL       *string `json:"url"`
+	IsPrimary bool    `json:"isPrimary" gorm:"default:false"`
+
 	// Type relationship
-	TypeID *string         `json:"typeId"`
+	TypeID *string          `json:"typeId"`
 	Type   *SocialMediaType `json:"type" gorm:"foreignKey:TypeID"`
-	
+
 	// Polymorphic relationships
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
-	
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
-	
+
 	// Audit fields
 	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
 	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
 	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
-	
-	// Direct relationships
-	Company *Company `json:"company" gorm:"foreignKey:EntityID"`
-	Contact *Contact `json:"contact" gorm:"foreignKey:EntityID"`
-	Lead    *Lead    `json:"lead" gorm:"foreignKey:EntityID"`
-	User    *User    `json:"user" gorm:"foreignKey:EntityID"`
 }
 
 // TableName specifies the table name for SocialMediaAccount

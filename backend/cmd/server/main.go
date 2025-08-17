@@ -178,6 +178,9 @@ func main() {
 				lookups.GET("/company-sizes", handlers.GetCompanySizes)
 				lookups.GET("/task-types", handlers.GetTaskTypes)
 				lookups.GET("/communication-types", handlers.GetCommunicationTypes)
+				lookups.GET("/email-address-types", handlers.GetEmailAddressTypes)
+				lookups.GET("/phone-number-types", handlers.GetPhoneNumberTypes)
+				lookups.GET("/address-types", handlers.GetAddressTypes)
 			}
 		}
 	}

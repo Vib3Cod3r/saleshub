@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/use-auth-provider'
 import { 
   BuildingOfficeIcon,
   UserGroupIcon,
@@ -12,7 +12,20 @@ import {
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+// Direct API calls instead of apiClient
+
+interface Company {
+  id: string
+  name: string
+  industry?: string
+}
+
+interface Contact {
+  id: string
+  firstName: string
+  lastName: string
+  title?: string
+}
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
@@ -26,25 +39,77 @@ export default function DashboardPage() {
 
   const { data: companiesData } = useQuery({
     queryKey: ['companies', { limit: 5 }],
-    queryFn: () => apiClient.getCompanies({ limit: 5 }),
+    queryFn: async () => {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:8089/api/crm/companies?limit=5', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    },
     enabled: !!user,
   })
 
   const { data: contactsData } = useQuery({
     queryKey: ['contacts', { limit: 5 }],
-    queryFn: () => apiClient.getContacts({ limit: 5 }),
+    queryFn: async () => {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:8089/api/crm/contacts?limit=5', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    },
     enabled: !!user,
   })
 
   const { data: leadsData } = useQuery({
     queryKey: ['leads', { limit: 5 }],
-    queryFn: () => apiClient.getLeads({ limit: 5 }),
+    queryFn: async () => {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:8089/api/crm/leads?limit=5', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    },
     enabled: !!user,
   })
 
   const { data: dealsData } = useQuery({
     queryKey: ['deals', { limit: 5 }],
-    queryFn: () => apiClient.getDeals({ limit: 5 }),
+    queryFn: async () => {
+      const token = localStorage.getItem('token')
+      const response = await fetch('http://localhost:8089/api/crm/deals?limit=5', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    },
     enabled: !!user,
   })
 
@@ -152,7 +217,7 @@ export default function DashboardPage() {
           </div>
           <div className="card-content">
             <div className="space-y-4">
-              {companiesData?.data?.data?.slice(0, 5).map((company: any) => (
+              {companiesData?.data?.data?.slice(0, 5).map((company: Company) => (
                 <div key={company.id} className="flex items-center space-x-3">
                   <div className="flex-shrink-0">
                     <BuildingOfficeIcon className="h-8 w-8 text-gray-400" />
@@ -178,7 +243,7 @@ export default function DashboardPage() {
           </div>
           <div className="card-content">
             <div className="space-y-4">
-              {contactsData?.data?.data?.slice(0, 5).map((contact: any) => (
+              {contactsData?.data?.data?.slice(0, 5).map((contact: Contact) => (
                 <div key={contact.id} className="flex items-center space-x-3">
                   <div className="flex-shrink-0">
                     <UserGroupIcon className="h-8 w-8 text-gray-400" />

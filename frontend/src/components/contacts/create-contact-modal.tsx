@@ -5,6 +5,7 @@ import { Dialog } from '@headlessui/react'
 import { XMarkIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
+import { useAuth } from '@/hooks/use-auth-provider'
 
 interface CreateContactModalProps {
   isOpen: boolean
@@ -54,8 +55,13 @@ interface ContactFormData {
 
 // Temporary API client
 const apiClient = {
-  createContact: async (contactData: any) => {
+  createContact: async (contactData: ContactFormData) => {
     const token = localStorage.getItem('token')
+    
+    if (!token) {
+      throw new Error('No authentication token found. Please log in again.')
+    }
+
     const response = await fetch('http://localhost:8089/api/crm/contacts', {
       method: 'POST',
       headers: {
@@ -67,7 +73,30 @@ const apiClient = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.error || 'Failed to create contact')
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        // Clear invalid token and redirect to login
+        localStorage.removeItem('token')
+        throw new Error('Authentication failed. Please log in again.')
+      }
+      
+      // Provide more specific error messages
+      if (errorData.error) {
+        throw new Error(errorData.error)
+      }
+      
+      // Generic error based on status code
+      switch (response.status) {
+        case 400:
+          throw new Error('Invalid contact data. Please check your input.')
+        case 403:
+          throw new Error('You do not have permission to create contacts.')
+        case 500:
+          throw new Error('Server error. Please try again later.')
+        default:
+          throw new Error(`Failed to create contact (${response.status})`)
+      }
     }
 
     return response.json()
@@ -75,6 +104,7 @@ const apiClient = {
 }
 
 export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContactModalProps) {
+  const { user } = useAuth()
   const [formData, setFormData] = useState<ContactFormData>({
     firstName: '',
     lastName: '',
@@ -97,8 +127,6 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
   const [createAndAddAnother, setCreateAndAddAnother] = useState(false)
 
   const queryClient = useQueryClient()
-
-
 
   const createContactMutation = useMutation({
     mutationFn: apiClient.createContact,
@@ -127,14 +155,57 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
         onSuccess()
       }
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       console.error('Failed to create contact:', error)
-      setErrors({ submit: error.message || 'Failed to create contact' })
+      
+      // Check if it's an authentication error
+      if (error.message && error.message.includes('authentication') || error.message.includes('log in')) {
+        setErrors({ submit: 'Authentication failed. Please log in again.' })
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 2000)
+      } else {
+        setErrors({ submit: error.message || 'Failed to create contact' })
+      }
     },
     onSettled: () => {
       setIsSubmitting(false)
     }
   })
+
+  // Check if user is authenticated - moved after all hooks
+  if (!user) {
+    return (
+      <Dialog open={isOpen} onClose={onClose} className="relative z-50">
+        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <Dialog.Panel className="mx-auto max-w-md rounded-lg bg-white p-6">
+            <Dialog.Title className="text-lg font-medium text-gray-900 mb-4">
+              Authentication Required
+            </Dialog.Title>
+            <p className="text-gray-600 mb-4">
+              You need to be logged in to create contacts.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => window.location.href = '/login'}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Go to Login
+              </button>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </Dialog.Panel>
+        </div>
+      </Dialog>
+    )
+  }
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -202,7 +273,7 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     }
   }
 
-  const handleInputChange = (field: keyof ContactFormData, value: any) => {
+  const handleInputChange = (field: keyof ContactFormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -217,7 +288,7 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     }
   }
 
-  const handleArrayChange = (arrayName: keyof Pick<ContactFormData, 'emailAddresses' | 'phoneNumbers' | 'addresses' | 'socialMedia'>, index: number, field: string, value: any) => {
+  const handleArrayChange = (arrayName: keyof Pick<ContactFormData, 'emailAddresses' | 'phoneNumbers' | 'addresses' | 'socialMedia'>, index: number, field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [arrayName]: prev[arrayName].map((item, i) => 
@@ -474,7 +545,7 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                 type="button"
                 onClick={() => {
                   setCreateAndAddAnother(true)
-                  handleSubmit(new Event('submit') as any)
+                  handleSubmit({ preventDefault: () => {} } as React.FormEvent)
                 }}
                 disabled={isSubmitting}
                 className="border border-orange-500 text-orange-500 px-4 py-2 rounded-md hover:bg-orange-50 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"

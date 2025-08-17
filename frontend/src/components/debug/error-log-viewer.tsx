@@ -8,7 +8,7 @@ interface ErrorLog {
   type: 'console' | 'network' | 'auth' | 'react' | 'nextjs'
   message: string
   stack?: string
-  details?: any
+  details?: unknown
   url?: string
   userAgent?: string
 }
@@ -110,7 +110,7 @@ export function ErrorLogViewer() {
               <p className="text-gray-500 text-center py-8">No logs to display</p>
             ) : (
               filteredLogs.map((log, index) => (
-                <div key={index} className="border border-gray-200 rounded p-3 bg-gray-50">
+                <div key={`error-${log.timestamp}-${log.type}-${log.message?.slice(0, 20)}-${index.toString()}`} className="border border-gray-200 rounded p-3 bg-gray-50">
                   <div className="flex items-center justify-between mb-2">
                     <span className={`text-xs px-2 py-1 rounded ${
                       log.type === 'auth' ? 'bg-blue-100 text-blue-800' :
@@ -125,13 +125,13 @@ export function ErrorLogViewer() {
                     </span>
                   </div>
                   <p className="text-sm font-medium text-gray-900 mb-1">{log.message}</p>
-                  {log.details && (
+                  {log.details !== undefined && log.details !== null && (
                     <details className="text-xs">
                       <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
                         Details
                       </summary>
                       <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-x-auto">
-                        {JSON.stringify(log.details, null, 2)}
+                        {typeof log.details === 'string' ? log.details : JSON.stringify(log.details, null, 2)}
                       </pre>
                     </details>
                   )}

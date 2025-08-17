@@ -3,7 +3,7 @@ interface ErrorLog {
   type: 'console' | 'network' | 'auth' | 'react' | 'nextjs'
   message: string
   stack?: string
-  details?: any
+  details?: unknown
   url?: string
   userAgent?: string
 }
@@ -12,7 +12,7 @@ class ErrorLogger {
   private logs: ErrorLog[] = []
   private maxLogs = 100
 
-  log(type: ErrorLog['type'], message: string, details?: any) {
+  log(type: ErrorLog['type'], message: string, details?: unknown) {
     const errorLog: ErrorLog = {
       timestamp: new Date().toISOString(),
       type,
@@ -101,7 +101,7 @@ if (typeof window !== 'undefined') {
 // Patch console.error to capture errors
 if (typeof window !== 'undefined') {
   const originalConsoleError = console.error
-  console.error = (...args: any[]) => {
+  console.error = (...args: unknown[]) => {
     // Call the original console.error
     originalConsoleError.apply(console, args)
     

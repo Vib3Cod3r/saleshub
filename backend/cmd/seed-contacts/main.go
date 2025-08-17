@@ -256,7 +256,7 @@ func main() {
 			LastName:       lastName,
 			Title:          &title,
 			Department:     &department,
-			CompanyID:      companies[companyIndex].ID,
+			CompanyID:      &companies[companyIndex].ID,
 			OriginalSource: &source,
 			EmailOptIn:     rand.Float32() > 0.3, // 70% opt-in rate
 			SMSOptIn:       rand.Float32() > 0.5, // 50% opt-in rate
@@ -333,7 +333,7 @@ func main() {
 		// Add work email for 70% of contacts
 		if rand.Float32() < 0.7 {
 			emailAddresses = append(emailAddresses, models.EmailAddress{
-				Email:      generateWorkEmail(contact.FirstName, contact.LastName, contact.CompanyID),
+				Email:      generateWorkEmail(contact.FirstName, contact.LastName, *contact.CompanyID),
 				IsPrimary:  false,
 				IsVerified: rand.Float32() > 0.1, // 90% verified
 				TypeID:     &emailTypes[1].ID,    // Work

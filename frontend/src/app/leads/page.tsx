@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/use-auth'
+import { useAuth } from '@/hooks/use-auth-provider'
 
 import { useQuery } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+// Direct API calls instead of apiClient
 import { 
   PlusIcon,
   MagnifyingGlassIcon,
@@ -15,6 +15,20 @@ import {
   BuildingOfficeIcon
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib/utils'
+
+interface Lead {
+  id: string
+  firstName: string
+  lastName: string
+  title?: string
+  email?: string
+  phone?: string
+  status?: string
+  source?: string
+  company?: {
+    name: string
+  }
+}
 
 export default function LeadsPage() {
   const { user, loading } = useAuth()
@@ -30,11 +44,25 @@ export default function LeadsPage() {
 
   const { data: leadsData, isLoading } = useQuery({
     queryKey: ['leads', { page: currentPage, search: searchTerm }],
-    queryFn: () => apiClient.getLeads({ 
-      page: currentPage, 
-      limit: 10, 
-      search: searchTerm 
-    }),
+    queryFn: async () => {
+      const token = localStorage.getItem('token')
+      const searchParams = new URLSearchParams()
+      searchParams.append('page', currentPage.toString())
+      searchParams.append('limit', '10')
+      if (searchTerm) searchParams.append('search', searchTerm)
+
+      const response = await fetch(`http://localhost:8089/api/crm/leads?${searchParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
+      }
+      return response.json()
+    },
     enabled: !!user,
   })
 
@@ -130,7 +158,7 @@ export default function LeadsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {leads.map((lead: any) => (
+                  {leads.map((lead: Lead) => (
                     <tr key={lead.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
