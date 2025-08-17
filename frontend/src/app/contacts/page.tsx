@@ -45,16 +45,38 @@ export default function ContactsPage() {
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [currentView, setCurrentView] = useState('All contacts')
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [pagination, setPagination] = useState({
     page: 1,
     total: 0,
     totalPages: 0,
     limit: 10
   })
+  const [sortConfig, setSortConfig] = useState<{
+    key: string | null
+    direction: 'asc' | 'desc'
+  }>({
+    key: null,
+    direction: 'asc'
+  })
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }, [debouncedSearchQuery])
 
   useEffect(() => {
     fetchContacts()
-  }, [pagination.page])
+  }, [pagination.page, debouncedSearchQuery])
 
   const fetchContacts = async () => {
     try {
@@ -67,7 +89,16 @@ export default function ContactsPage() {
         return
       }
 
-      const response = await fetch(`http://localhost:8089/api/crm/contacts?page=${pagination.page}&limit=${pagination.limit}`, {
+      const searchParams = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString()
+      })
+      
+      if (debouncedSearchQuery.trim()) {
+        searchParams.append('search', debouncedSearchQuery.trim())
+      }
+
+      const response = await fetch(`http://localhost:8089/api/crm/contacts?${searchParams.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -133,6 +164,58 @@ export default function ContactsPage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc'
+    
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    
+    setSortConfig({ key, direction })
+  }
+
+  const getSortedContacts = () => {
+    if (!sortConfig.key) return contacts
+
+    return [...contacts].sort((a, b) => {
+      let aValue: string | number = ''
+      let bValue: string | number = ''
+
+      switch (sortConfig.key) {
+        case 'name':
+          aValue = getContactName(a).toLowerCase()
+          bValue = getContactName(b).toLowerCase()
+          break
+        case 'email':
+          aValue = getContactEmail(a).toLowerCase()
+          bValue = getContactEmail(b).toLowerCase()
+          break
+        case 'phone':
+          aValue = getContactPhone(a).toLowerCase()
+          bValue = getContactPhone(b).toLowerCase()
+          break
+        case 'company':
+          aValue = getContactCompany(a).toLowerCase()
+          bValue = getContactCompany(b).toLowerCase()
+          break
+        case 'lastActivity':
+          aValue = new Date(a.updatedAt).getTime()
+          bValue = new Date(b.updatedAt).getTime()
+          break
+        default:
+          return 0
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'asc' ? -1 : 1
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'asc' ? 1 : -1
+      }
+      return 0
+    })
+  }
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '--'
     const date = new Date(dateString)
@@ -148,7 +231,7 @@ export default function ContactsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-center h-64">
             <div className="text-lg text-gray-600">Loading contacts...</div>
@@ -160,7 +243,7 @@ export default function ContactsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="h-full flex flex-col">
           <div className="flex items-center justify-center h-64">
             <div className="text-lg text-red-600">Error: {error}</div>
@@ -171,14 +254,12 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-2">
             <h1 className="text-2xl font-semibold text-gray-900">Contacts</h1>
-            <ChevronDownIcon className="h-5 w-5 text-gray-400" />
-            <span className="text-sm text-gray-500">{pagination.total} records</span>
           </div>
           <div className="flex items-center space-x-3">
             <button className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900">
@@ -198,64 +279,41 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex items-center space-x-1 mb-4">
-          <button className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-md">
-            <span>All contacts</span>
-            <span className="text-orange-400">×</span>
-          </button>
-          <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">My contacts</button>
-          <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Unassigned contacts</button>
-          <PlusIcon className="h-4 w-4 text-gray-400" />
-        </div>
 
-        {/* Views */}
+
+
+
+        {/* Search, Filters, and Actions */}
         <div className="flex items-center justify-between mb-4">
+          {/* Left side - Search and Filters */}
           <div className="flex items-center space-x-4">
-            <button className="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900">
-              <PlusIcon className="h-4 w-4" />
-              <span>+ Add view (3/50)</span>
-            </button>
-            <button className="text-sm text-gray-600 hover:text-gray-900">All Views</button>
+            {/* Search Bar */}
+            <div className="relative w-80">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search name, phone, email"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              />
+            </div>
+
+            {/* Filters */}
+            <div className="flex items-center space-x-1">
+              <button className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-md">
+                <span>All contacts</span>
+                <span className="text-orange-400">×</span>
+              </button>
+              <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">My contacts</button>
+              <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Unassigned contacts</button>
+              <PlusIcon className="h-4 w-4 text-gray-400" />
+            </div>
           </div>
-        </div>
 
-        {/* Sort and Filter */}
-        <div className="flex items-center space-x-3 mb-4">
-          <select className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white">
-            <option>Contact owner</option>
-          </select>
-          <select className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white">
-            <option>Create date</option>
-          </select>
-          <select className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white">
-            <option>Last activity date</option>
-          </select>
-          <select className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white">
-            <option>Lead status</option>
-          </select>
-          <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">+ More</button>
-          <button className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900">
-            <FunnelIcon className="h-4 w-4" />
-            <span>= Advanced filters</span>
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-6">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search name, phone, email"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-          />
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center justify-between mb-4">
+          {/* Right side - Records count and Actions */}
           <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-500">{pagination.total} records</span>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Export</button>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Edit columns</button>
           </div>
@@ -275,34 +333,79 @@ export default function ContactsPage() {
                   />
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('name')}
+                  >
                     <span>NAME</span>
                     <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'name' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'name' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
                     </div>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
+                  </button>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('email')}
+                  >
                     <span>EMAIL</span>
                     <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'email' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'email' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
                     </div>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
+                  </button>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('phone')}
+                  >
                     <span>PHONE NUMBER</span>
                     <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'phone' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'phone' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
                     </div>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
+                  </button>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center space-x-1">
@@ -315,24 +418,54 @@ export default function ContactsPage() {
                   </div>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('company')}
+                  >
                     <span>PRIMARY COMPANY</span>
                     <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'company' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'company' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
                     </div>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
+                  </button>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('lastActivity')}
+                  >
                     <span>LAST ACTIVITY DATE (GMT+8)</span>
                     <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'lastActivity' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'lastActivity' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
                     </div>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
+                  </button>
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center space-x-1">
@@ -347,7 +480,7 @@ export default function ContactsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {contacts.map((contact) => (
+              {getSortedContacts().map((contact) => (
                 <tr key={contact.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">
                     <input
@@ -396,30 +529,86 @@ export default function ContactsPage() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center space-x-4 mt-6 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-center space-x-2 mt-6 pt-4 border-t border-gray-200">
+          {/* Previous Button */}
           <button 
-            className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             disabled={pagination.page === 1}
             onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
           >
-            <ChevronLeftIcon className="h-4 w-4" />
-            <span>Prev</span>
+            Previous
           </button>
-          <button className="px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-md">
-            {pagination.page}
-          </button>
+          
+          {/* Page Numbers */}
+          <div className="flex items-center space-x-1">
+            {(() => {
+              const totalPages = pagination.totalPages;
+              const currentPage = pagination.page;
+              const pages = [];
+              
+              // If total pages is 10 or less, show all pages
+              if (totalPages <= 10) {
+                for (let i = 1; i <= totalPages; i++) {
+                  pages.push(i);
+                }
+              } else {
+                // For more than 10 pages, show smart pagination
+                if (currentPage <= 5) {
+                  // Show first 7 pages + ellipsis + last page
+                  for (let i = 1; i <= 7; i++) {
+                    pages.push(i);
+                  }
+                  pages.push('...');
+                  pages.push(totalPages);
+                } else if (currentPage >= totalPages - 4) {
+                  // Show first page + ellipsis + last 7 pages
+                  pages.push(1);
+                  pages.push('...');
+                  for (let i = totalPages - 6; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  // Show first page + ellipsis + current page and neighbors + ellipsis + last page
+                  pages.push(1);
+                  pages.push('...');
+                  for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    pages.push(i);
+                  }
+                  pages.push('...');
+                  pages.push(totalPages);
+                }
+              }
+              
+              return pages.map((pageNum, index) => (
+                pageNum === '...' ? (
+                  <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-400">
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={pageNum}
+                    className={`px-2 py-1 text-sm font-medium rounded ${
+                      pageNum === currentPage
+                        ? 'text-black font-semibold' // Current page - black and bold
+                        : 'text-blue-600 hover:text-blue-800' // Other pages - blue
+                    }`}
+                    onClick={() => setPagination(prev => ({ ...prev, page: pageNum as number }))}
+                  >
+                    {pageNum}
+                  </button>
+                )
+              ));
+            })()}
+          </div>
+          
+          {/* Next Button */}
           <button 
-            className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
           >
-            <span>Next</span>
-            <ChevronRightIcon className="h-4 w-4" />
+            Next
           </button>
-          <div className="flex items-center space-x-1">
-            <span className="text-sm text-gray-600">{pagination.limit} per page</span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-          </div>
         </div>
       </div>
     </div>

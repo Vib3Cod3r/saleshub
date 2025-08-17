@@ -3,7 +3,7 @@
 
 # Protected components (only modify if explicitly requested)
 frontend/src/app/deals/page.tsx
-frontend/src/app/contacts/page.tsx
+# frontend/src/app/contacts/page.tsx - TEMPORARILY UNLOCKED FOR PAGINATION UPDATE
 frontend/src/app/companies/page.tsx
 
 # Protected layout components

@@ -3,10 +3,12 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"saleshub-backend/config"
+	"saleshub-backend/lib"
 	"saleshub-backend/middleware"
 	"saleshub-backend/models"
 )
@@ -33,8 +35,14 @@ type AuthResponse struct {
 
 // Register handles user registration
 func Register(c *gin.Context) {
+	start := time.Now()
+	userID := ""
+	tenantID := ""
+	ipAddress := c.ClientIP()
+
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		lib.APILog.LogError("Register", c.Request.URL.Path, userID, tenantID, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
@@ -86,12 +94,18 @@ func Register(c *gin.Context) {
 	// Generate token
 	token, err := middleware.GenerateToken(user)
 	if err != nil {
+		lib.APILog.LogError("Register", c.Request.URL.Path, userID, tenantID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
 	// Load user with role
 	config.DB.Preload("Role").Where("id = ?", user.ID).First(&user)
+
+	// Log successful registration
+	duration := time.Since(start)
+	lib.APILog.LogAuthentication("Register", req.Email, user.ID, user.TenantID, ipAddress, true)
+	lib.APILog.LogRequest(c.Request.Method, c.Request.URL.Path, user.ID, user.TenantID, ipAddress, duration, http.StatusCreated)
 
 	c.JSON(http.StatusCreated, AuthResponse{
 		Token: token,
@@ -101,8 +115,14 @@ func Register(c *gin.Context) {
 
 // Login handles user login
 func Login(c *gin.Context) {
+	start := time.Now()
+	userID := ""
+	tenantID := ""
+	ipAddress := c.ClientIP()
+
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		lib.APILog.LogError("Login", c.Request.URL.Path, userID, tenantID, err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request data", "details": err.Error()})
 		return
 	}
@@ -110,18 +130,21 @@ func Login(c *gin.Context) {
 	// Find user by email
 	var user models.User
 	if err := config.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		lib.APILog.LogAuthentication("Login", req.Email, userID, tenantID, ipAddress, false)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
 
 	// Check if user is active
 	if !user.IsActive {
+		lib.APILog.LogAuthentication("Login", req.Email, user.ID, user.TenantID, ipAddress, false)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Account is deactivated"})
 		return
 	}
 
 	// Check password
 	if !middleware.CheckPassword(req.Password, user.Password) {
+		lib.APILog.LogAuthentication("Login", req.Email, user.ID, user.TenantID, ipAddress, false)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
 		return
 	}
@@ -138,6 +161,11 @@ func Login(c *gin.Context) {
 		// Log the error but don't fail the login
 		log.Printf("Warning: Failed to load user role: %v", err)
 	}
+
+	// Log successful login
+	duration := time.Since(start)
+	lib.APILog.LogAuthentication("Login", req.Email, user.ID, user.TenantID, ipAddress, true)
+	lib.APILog.LogRequest(c.Request.Method, c.Request.URL.Path, user.ID, user.TenantID, ipAddress, duration, http.StatusOK)
 
 	c.JSON(http.StatusOK, AuthResponse{
 		Token: token,

@@ -24,6 +24,10 @@ func main() {
 	config.AutoMigrate()
 	config.SeedDatabase()
 
+	// Setup API logging
+	apiLogConfig := config.DefaultAPILoggingConfig()
+	config.SetupAPILogging(apiLogConfig)
+
 	// Set Gin mode
 	if os.Getenv("ENV") == "production" {
 		gin.SetMode(gin.ReleaseMode)
@@ -39,6 +43,10 @@ func main() {
 	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	corsConfig.AllowCredentials = true
 	r.Use(cors.New(corsConfig))
+
+	// API logging middleware
+	apiLoggerConfig := middleware.DefaultAPILoggerConfig()
+	r.Use(middleware.APILogger(apiLoggerConfig))
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {

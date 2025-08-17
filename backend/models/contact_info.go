@@ -43,7 +43,7 @@ type PhoneNumber struct {
 	TypeID *string          `json:"typeId"`
 	Type   *PhoneNumberType `json:"type" gorm:"foreignKey:TypeID"`
 
-	// Polymorphic relationships
+	// Polymorphic relationships - no GORM tags to prevent auto-constraints
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
 
@@ -51,10 +51,10 @@ type PhoneNumber struct {
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
 
-	// Audit fields
-	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+	// Timestamps
+	CreatedAt time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt *time.Time `json:"deletedAt" gorm:"index"`
 }
 
 // TableName specifies the table name for PhoneNumber
@@ -99,7 +99,7 @@ type EmailAddress struct {
 	TypeID *string           `json:"typeId"`
 	Type   *EmailAddressType `json:"type" gorm:"foreignKey:TypeID"`
 
-	// Polymorphic relationships
+	// Polymorphic relationships - no GORM tags to prevent auto-constraints
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
 
@@ -107,10 +107,10 @@ type EmailAddress struct {
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
 
-	// Audit fields
-	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+	// Timestamps
+	CreatedAt time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt *time.Time `json:"deletedAt" gorm:"index"`
 }
 
 // TableName specifies the table name for EmailAddress
@@ -159,7 +159,7 @@ type Address struct {
 	TypeID *string      `json:"typeId"`
 	Type   *AddressType `json:"type" gorm:"foreignKey:TypeID"`
 
-	// Polymorphic relationships
+	// Polymorphic relationships - no GORM tags to prevent auto-constraints
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
 
@@ -167,10 +167,10 @@ type Address struct {
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
 
-	// Audit fields
-	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+	// Timestamps
+	CreatedAt time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt *time.Time `json:"deletedAt" gorm:"index"`
 }
 
 // TableName specifies the table name for Address
@@ -216,7 +216,7 @@ type SocialMediaAccount struct {
 	TypeID *string          `json:"typeId"`
 	Type   *SocialMediaType `json:"type" gorm:"foreignKey:TypeID"`
 
-	// Polymorphic relationships
+	// Polymorphic relationships - no GORM tags to prevent auto-constraints
 	EntityID   string `json:"entityId" gorm:"not null"`
 	EntityType string `json:"entityType" gorm:"not null"` // 'Company', 'Contact', 'Lead', 'User'
 
@@ -224,10 +224,10 @@ type SocialMediaAccount struct {
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`
 
-	// Audit fields
-	CreatedAt time.Time      `json:"createdAt" gorm:"autoCreateTime"`
-	UpdatedAt time.Time      `json:"updatedAt" gorm:"autoUpdateTime"`
-	DeletedAt gorm.DeletedAt `json:"deletedAt" gorm:"index"`
+	// Timestamps
+	CreatedAt time.Time  `json:"createdAt" gorm:"autoCreateTime"`
+	UpdatedAt time.Time  `json:"updatedAt" gorm:"autoUpdateTime"`
+	DeletedAt *time.Time `json:"deletedAt" gorm:"index"`
 }
 
 // TableName specifies the table name for SocialMediaAccount

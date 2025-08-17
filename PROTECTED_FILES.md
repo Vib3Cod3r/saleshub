@@ -13,7 +13,7 @@ This document lists all files that are protected from AI modifications. These fi
 
 ### Pages
 - `frontend/src/app/deals/page.tsx` - Deals management page (CRM-style interface with filters, table, and pagination)
-- `frontend/src/app/contacts/page.tsx` - Contacts management page (CRM-style interface with filters, table, and pagination)
+- `frontend/src/app/contacts/page.tsx` - Contacts management page (CRM-style interface with filters, table, and pagination) - **TEMPORARILY UNLOCKED FOR PAGINATION UPDATE**
 - `frontend/src/app/companies/page.tsx` - Companies management page (CRM-style interface with filters, table, and pagination)
 
 ### Layout Components

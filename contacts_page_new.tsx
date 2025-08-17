@@ -396,30 +396,41 @@ export default function ContactsPage() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center space-x-4 mt-6 pt-4 border-t border-gray-200">
+        <div className="flex items-center justify-center space-x-2 mt-6 pt-4 border-t border-gray-200">
+          {/* Previous Button */}
           <button 
-            className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             disabled={pagination.page === 1}
             onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
           >
-            <ChevronLeftIcon className="h-4 w-4" />
-            <span>Prev</span>
+            Previous
           </button>
-          <button className="px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-md">
-            {pagination.page}
-          </button>
+          
+          {/* Page Numbers */}
+          <div className="flex items-center space-x-1">
+            {Array.from({ length: Math.min(10, pagination.totalPages) }, (_, i) => i + 1).map((pageNum) => (
+              <button
+                key={pageNum}
+                className={`px-2 py-1 text-sm font-medium rounded ${
+                  pageNum === pagination.page
+                    ? 'text-black font-semibold' // Current page - black and bold
+                    : 'text-blue-600 hover:text-blue-800' // Other pages - blue
+                }`}
+                onClick={() => setPagination(prev => ({ ...prev, page: pageNum }))}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+          
+          {/* Next Button */}
           <button 
-            className="flex items-center space-x-1 px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             disabled={pagination.page >= pagination.totalPages}
             onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
           >
-            <span>Next</span>
-            <ChevronRightIcon className="h-4 w-4" />
+            Next
           </button>
-          <div className="flex items-center space-x-1">
-            <span className="text-sm text-gray-600">{pagination.limit} per page</span>
-            <ChevronDownIcon className="h-4 w-4 text-gray-400" />
-          </div>
         </div>
       </div>
     </div>

@@ -112,7 +112,8 @@ func InitDatabase() {
 
 	var err error
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: dbLogger,
+		Logger:                                   dbLogger,
+		DisableForeignKeyConstraintWhenMigrating: true, // Disable automatic foreign key constraints
 	})
 	if err != nil {
 		log.Fatal("[DB-ERROR] Failed to connect to database:", err)

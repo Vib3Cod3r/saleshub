@@ -64,7 +64,9 @@ func GetContacts(c *gin.Context) {
 	}
 
 	// Preload relationships
-	query = query.Preload("Company")
+	query = query.Preload("Company").
+		Preload("PhoneNumbers").
+		Preload("EmailAddresses")
 
 	// Get total count for pagination
 	var total int64
