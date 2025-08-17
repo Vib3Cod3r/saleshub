@@ -279,9 +279,9 @@ export default function ContactsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="h-full flex flex-col">
-          <div className="flex items-center justify-center h-64">
+      <div className="bg-white">
+        <div className="w-full">
+          <div className="flex items-center justify-center py-8">
             <div className="text-lg text-gray-600">Loading contacts...</div>
           </div>
         </div>
@@ -291,9 +291,9 @@ export default function ContactsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white">
-        <div className="h-full flex flex-col">
-          <div className="flex items-center justify-center h-64">
+      <div className="bg-white">
+        <div className="w-full">
+          <div className="flex items-center justify-center py-8">
             <div className="text-lg text-red-600">Error: {error}</div>
           </div>
         </div>
@@ -302,8 +302,8 @@ export default function ContactsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="h-full flex flex-col">
+    <div className="bg-white">
+      <div className="w-full">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-2">
@@ -370,11 +370,11 @@ export default function ContactsPage() {
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto">
-          <table className="w-full">
+        <div className="w-full">
+          <table className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-4 py-3 text-left">
+                <th className="w-12 px-4 py-3 text-left">
                   <input
                     type="checkbox"
                     checked={selectedContacts.length === getFilteredContacts().length && getFilteredContacts().length > 0}
@@ -382,7 +382,7 @@ export default function ContactsPage() {
                     className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('name')}
@@ -407,7 +407,7 @@ export default function ContactsPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-64 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('email')}
@@ -432,7 +432,7 @@ export default function ContactsPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('phone')}
@@ -457,7 +457,7 @@ export default function ContactsPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center space-x-1">
                     <span>CONTACT OWNER</span>
                     <div className="flex flex-col">
@@ -467,7 +467,7 @@ export default function ContactsPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </div>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('company')}
@@ -492,7 +492,7 @@ export default function ContactsPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('lastActivity')}
@@ -517,7 +517,7 @@ export default function ContactsPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center space-x-1">
                     <span>LEAD STATUS</span>
                     <div className="flex flex-col">
