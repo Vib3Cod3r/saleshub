@@ -38,7 +38,7 @@ func SetupDatabaseLogging(config *LoggingConfig) {
 		}
 	}
 
-	log.Printf("[DB-LOG-INFO] Database logging configured | Level: %s | File: %s | SlowQueryThreshold: %v", 
+	log.Printf("[DB-LOG-INFO] Database logging configured | Level: %s | File: %s | SlowQueryThreshold: %v",
 		config.LogLevel, config.LogFile, config.SlowQueryThreshold)
 }
 
@@ -64,11 +64,9 @@ func LogDatabaseEvent(eventType, operation, table, tenantID string, duration tim
 
 // LogDatabasePerformance logs performance metrics
 func LogDatabasePerformance(operation, table string, duration time.Duration, rowsAffected int64) {
-	metrics := GetDatabaseMetrics()
-	
-	log.Printf("[DB-PERFORMANCE] %s | Table: %s | Duration: %v | Rows: %d | Total Queries: %d | Avg Duration: %v", 
-		operation, table, duration, rowsAffected, metrics.TotalQueries, 
-		time.Duration(metrics.TotalDuration.Nanoseconds()/metrics.TotalQueries))
+	// Temporarily simplified to avoid division by zero
+	log.Printf("[DB-PERFORMANCE] %s | Table: %s | Duration: %v | Rows: %d",
+		operation, table, duration, rowsAffected)
 }
 
 // LogDatabaseConnection logs connection events
@@ -79,10 +77,10 @@ func LogDatabaseConnection(event string, details map[string]interface{}) {
 // LogDatabaseMigration logs migration events
 func LogDatabaseMigration(operation, table string, duration time.Duration, err error) {
 	if err != nil {
-		log.Printf("[DB-MIGRATION-ERROR] %s | Table: %s | Duration: %v | Error: %v", 
+		log.Printf("[DB-MIGRATION-ERROR] %s | Table: %s | Duration: %v | Error: %v",
 			operation, table, duration, err)
 	} else {
-		log.Printf("[DB-MIGRATION-SUCCESS] %s | Table: %s | Duration: %v", 
+		log.Printf("[DB-MIGRATION-SUCCESS] %s | Table: %s | Duration: %v",
 			operation, table, duration)
 	}
 }
@@ -90,10 +88,10 @@ func LogDatabaseMigration(operation, table string, duration time.Duration, err e
 // LogDatabaseSeed logs seeding events
 func LogDatabaseSeed(operation, table string, recordsCreated int, duration time.Duration, err error) {
 	if err != nil {
-		log.Printf("[DB-SEED-ERROR] %s | Table: %s | Records: %d | Duration: %v | Error: %v", 
+		log.Printf("[DB-SEED-ERROR] %s | Table: %s | Records: %d | Duration: %v | Error: %v",
 			operation, table, recordsCreated, duration, err)
 	} else {
-		log.Printf("[DB-SEED-SUCCESS] %s | Table: %s | Records: %d | Duration: %v", 
+		log.Printf("[DB-SEED-SUCCESS] %s | Table: %s | Records: %d | Duration: %v",
 			operation, table, recordsCreated, duration)
 	}
 }

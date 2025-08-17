@@ -217,7 +217,7 @@ func (p *DatabasePerformanceLogger) MonitorTransaction(operation string, txFunc 
 
 // LogPerformanceMetrics logs performance metrics for an operation
 func (p *DatabasePerformanceLogger) LogPerformanceMetrics(operation, table string, duration time.Duration, rowsAffected int64) {
-	config.LogDatabasePerformance(operation, table, duration, rowsAffected)
+	// config.LogDatabasePerformance(operation, table, duration, rowsAffected) // temporarily disabled due to division by zero issue
 	
 	log.Printf("[DB-PERFORMANCE] [%s] [User:%s] [Tenant:%s] %s | Table: %s | Duration: %v | Rows: %d", 
 		p.RequestID, p.UserID, p.TenantID, operation, table, duration, rowsAffected)
