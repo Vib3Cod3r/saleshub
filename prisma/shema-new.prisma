@@ -1,0 +1,964 @@
+// AI-Driven CRM Sales and Marketing Database Schema
+// Comprehensive schema for Salesforce/HubSpot-like CRM with AI capabilities
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT
+// ============================================================================
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  password          String
+  firstName         String
+  lastName          String
+  middleName        String?
+  jobTitle          String?
+  department        String?
+  phone             String?
+  mobile            String?
+  avatar            String?
+  timezone          String?
+  locale            String?
+  isActive          Boolean  @default(true)
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  role              UserRole @relation(fields: [roleId], references: [id])
+  roleId            String
+  groupMemberships  UserGroupMember[]
+  ownedCompanies    Company[] @relation("CompanyOwner")
+  assignedContacts  Contact[] @relation("ContactOwner")
+  assignedLeads     Lead[] @relation("LeadOwner")
+  assignedDeals     Deal[] @relation("DealOwner")
+  assignedTasks     Task[] @relation("TaskAssignee")
+  createdTasks      Task[] @relation("TaskCreator")
+  communications    Communication[] @relation("CommunicationCreator")
+  notes             Note[] @relation("NoteCreator")
+  content           Content[] @relation("ContentCreator")
+  workflows         Workflow[] @relation("WorkflowCreator")
+  auditLogs         AuditLog[] @relation("AuditLogUser")
+  
+  @@map("users")
+}
+
+model UserRole {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  permissions Json     // Store permissions as JSON for flexibility
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       User[]
+  
+  @@map("user_roles")
+}
+
+model UserGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        GroupType
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members     UserGroupMember[]
+  
+  @@map("user_groups")
+}
+
+model UserGroupMember {
+  id        String   @id @default(cuid())
+  userId    String
+  groupId   String
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+  isActive  Boolean  @default(true)
+
+  // Relations
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group     UserGroup  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@map("user_group_members")
+}
+
+// ============================================================================
+// CONTACT & COMPANY MANAGEMENT
+// ============================================================================
+
+model Contact {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String
+  middleName        String?
+  preferredName     String?
+  email             String?  @unique
+  emailVerified     Boolean  @default(false)
+  phone             String?
+  mobile            String?
+  workPhone         String?
+  fax               String?
+  website           String?
+  jobTitle          String?
+  department        String?
+  isDecisionMaker   Boolean  @default(false)
+  gender            Gender?
+  birthday          DateTime?
+  spouseName        String?
+  childrenNames     String?  // JSON array of names
+  address           String?
+  address2          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  timezone          String?
+  language          String?
+  leadSource        LeadSource?
+  leadStatus        LeadStatus @default(NEW)
+  leadScore         Int?     @default(0)
+  notes             String?
+  tags              String[] // Array of tags
+  lastContactDate   DateTime?
+  lastActivityDate  DateTime?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  companyId         String?
+  company           Company? @relation(fields: [companyId], references: [id])
+  ownerId           String?
+  owner             User?    @relation("ContactOwner", fields: [ownerId], references: [id])
+  deals             Deal[]
+  leads             Lead[]
+  tasks             Task[]
+  communications    Communication[]
+  notes             Note[]
+  socialProfiles    SocialProfile[]
+  customFields      CustomFieldValue[] @relation("ContactCustomFields")
+  auditLogs         AuditLog[] @relation("ContactAuditLog")
+  
+  @@map("contacts")
+}
+
+model Company {
+  id                String   @id @default(cuid())
+  name              String
+  legalName         String?
+  dba               String?  // Doing Business As
+  website           String?
+  phone             String?
+  fax               String?
+  email             String?
+  address           String?
+  address2          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  timezone          String?
+  industry          String?
+  sector            String?
+  size              CompanySize?
+  revenue           Float?
+  employeeCount     Int?
+  foundedYear       Int?
+  tickerSymbol      String?
+  isPublic          Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  prospectAssignment String? // AI-derived assignment code
+  prospectReengagement String? // AI-derived re-engagement code
+  notes             String?
+  tags              String[]
+  lastActivityDate  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  parentCompanyId   String?
+  parentCompany     Company? @relation("CompanyHierarchy", fields: [parentCompanyId], references: [id])
+  subsidiaries      Company[] @relation("CompanyHierarchy")
+  ownerId           String
+  owner             User     @relation("CompanyOwner", fields: [ownerId], references: [id])
+  contacts          Contact[]
+  deals             Deal[]
+  leads             Lead[]
+  research          CompanyResearch[]
+  customFields      CustomFieldValue[] @relation("CompanyCustomFields")
+  auditLogs         AuditLog[] @relation("CompanyAuditLog")
+  
+  @@map("companies")
+}
+
+model CompanyResearch {
+  id          String   @id @default(cuid())
+  companyId   String
+  title       String
+  content     String
+  source      String?
+  url         String?
+  researchType ResearchType
+  aiGenerated Boolean  @default(false)
+  confidence  Float?   // AI confidence score 0-1
+  tags        String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@map("company_research")
+}
+
+// ============================================================================
+// LEAD MANAGEMENT
+// ============================================================================
+
+model Lead {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  company           String?
+  jobTitle          String?
+  website           String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  source            LeadSource
+  sourceDetails     String?  // Specific campaign, event, etc.
+  leadScore         Int      @default(0)
+  status            LeadStatus @default(NEW)
+  assignedToId      String?
+  notes             String?
+  tags              String[]
+  isConverted       Boolean  @default(false)
+  convertedToContactId String?
+  convertedToCompanyId String?
+  convertedAt       DateTime?
+  lastActivityDate  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  assignedTo        User?    @relation("LeadOwner", fields: [assignedToId], references: [id])
+  convertedToContact Contact? @relation("LeadToContact", fields: [convertedToContactId], references: [id])
+  convertedToCompany Company? @relation("LeadToCompany", fields: [convertedToCompanyId], references: [id])
+  leadLists         LeadListMember[]
+  activities        LeadActivity[]
+  customFields      CustomFieldValue[] @relation("LeadCustomFields")
+  auditLogs         AuditLog[] @relation("LeadAuditLog")
+  
+  @@map("leads")
+}
+
+model LeadList {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        LeadListType
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members     LeadListMember[]
+  
+  @@map("lead_lists")
+}
+
+model LeadListMember {
+  id        String   @id @default(cuid())
+  leadId    String
+  listId    String
+  addedAt   DateTime @default(now())
+  removedAt DateTime?
+
+  // Relations
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  list      LeadList @relation(fields: [listId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, listId])
+  @@map("lead_list_members")
+}
+
+model LeadActivity {
+  id          String   @id @default(cuid())
+  leadId      String
+  type        LeadActivityType
+  description String?
+  metadata    Json?    // Store additional activity data
+  ipAddress   String?
+  userAgent   String?
+  url         String?
+  duration    Int?     // For page views, time spent
+  createdAt   DateTime @default(now())
+
+  // Relations
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  
+  @@map("lead_activities")
+}
+
+// ============================================================================
+// DEAL & OPPORTUNITY MANAGEMENT
+// ============================================================================
+
+model Deal {
+  id                String   @id @default(cuid())
+  title             String
+  description       String?
+  value             Float
+  currency          String   @default("USD")
+  probability       Int      @default(0) // 0-100
+  stage             DealStage @default(PROSPECTING)
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  closeReason       String?
+  lossReason        String?
+  competitors       String[] // Array of competitor names
+  risks             String?  // Identified risks
+  notes             String?
+  tags              String[]
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  primaryContactId  String?
+  primaryContact    Contact? @relation(fields: [primaryContactId], references: [id])
+  ownerId           String
+  owner             User     @relation("DealOwner", fields: [ownerId], references: [id])
+  products          DealProduct[]
+  tasks             Task[]
+  communications    Communication[]
+  notes             Note[]
+  stageHistory      DealStageHistory[]
+  customFields      CustomFieldValue[] @relation("DealCustomFields")
+  auditLogs         AuditLog[] @relation("DealAuditLog")
+  
+  @@map("deals")
+}
+
+model DealProduct {
+  id          String   @id @default(cuid())
+  dealId      String
+  productName String
+  quantity    Int      @default(1)
+  unitPrice  Float
+  totalPrice  Float
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  @@map("deal_products")
+}
+
+model DealStageHistory {
+  id          String   @id @default(cuid())
+  dealId      String
+  fromStage   DealStage
+  toStage     DealStage
+  reason      String?
+  changedBy   String
+  changedAt   DateTime @default(now())
+
+  // Relations
+  deal        Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  
+  @@map("deal_stage_history")
+}
+
+// ============================================================================
+// CONTENT MANAGEMENT
+// ============================================================================
+
+model Content {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        ContentType
+  url         String?
+  filePath    String?
+  fileSize    Int?
+  mimeType    String?
+  duration    Int?     // For audio/video in seconds
+  tags        String[]
+  isPublished Boolean  @default(false)
+  publishedAt DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User     @relation("ContentCreator", fields: [creatorId], references: [id])
+  interactions ContentInteraction[]
+  customFields CustomFieldValue[] @relation("ContentCustomFields")
+  
+  @@map("content")
+}
+
+model ContentInteraction {
+  id          String   @id @default(cuid())
+  contentId   String
+  contactId   String?
+  leadId      String?
+  type        ContentInteractionType
+  metadata    Json?    // Store interaction details
+  ipAddress   String?
+  userAgent   String?
+  duration    Int?     // Time spent viewing/engaging
+  createdAt   DateTime @default(now())
+
+  // Relations
+  content     Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  
+  @@map("content_interactions")
+}
+
+// ============================================================================
+// WORKFLOW & TASK MANAGEMENT
+// ============================================================================
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  type        WorkflowType
+  isActive    Boolean  @default(true)
+  metadata    Json?    // Workflow configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User     @relation("WorkflowCreator", fields: [creatorId], references: [id])
+  tasks       Task[]
+  
+  @@map("workflows")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        TaskType
+  priority    Priority @default(MEDIUM)
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  startDate   DateTime?
+  completedAt DateTime?
+  estimatedDuration Int? // In minutes
+  actualDuration Int?   // In minutes
+  notes       String?
+  metadata    Json?     // Additional task data
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workflowId  String?
+  workflow    Workflow? @relation(fields: [workflowId], references: [id])
+  assigneeId  String?
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creatorId   String
+  creator     User      @relation("TaskCreator", fields: [creatorId], references: [id])
+  contactId   String?
+  contact     Contact?  @relation(fields: [contactId], references: [id])
+  dealId      String?
+  deal        Deal?     @relation(fields: [dealId], references: [id])
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id])
+  customFields CustomFieldValue[] @relation("TaskCustomFields")
+  
+  @@map("tasks")
+}
+
+// ============================================================================
+// COMMUNICATION & NOTES
+// ============================================================================
+
+model Communication {
+  id          String   @id @default(cuid())
+  type        CommunicationType
+  subject     String?
+  content     String?
+  direction   Direction @default(OUTBOUND)
+  status      CommunicationStatus @default(SENT)
+  scheduled   Boolean  @default(false)
+  scheduledFor DateTime?
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  respondedAt DateTime?
+  duration    Int?     // For calls, in minutes
+  outcome     String?
+  metadata    Json?    // Store additional communication data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User     @relation("CommunicationCreator", fields: [creatorId], references: [id])
+  contactId   String?
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  dealId      String?
+  deal        Deal?    @relation(fields: [dealId], references: [id])
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  attachments CommunicationAttachment[]
+  customFields CustomFieldValue[] @relation("CommunicationCustomFields")
+  
+  @@map("communications")
+}
+
+model CommunicationAttachment {
+  id              String   @id @default(cuid())
+  communicationId String
+  filename        String
+  filePath        String
+  fileSize        Int
+  mimeType        String
+  createdAt       DateTime @default(now())
+
+  // Relations
+  communication   Communication @relation(fields: [communicationId], references: [id], onDelete: Cascade)
+  
+  @@map("communication_attachments")
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String?
+  content     String
+  type        NoteType @default(GENERAL)
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User     @relation("NoteCreator", fields: [creatorId], references: [id])
+  contactId   String?
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  dealId      String?
+  deal        Deal?    @relation(fields: [dealId], references: [id])
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id])
+  
+  @@map("notes")
+}
+
+// ============================================================================
+// SOCIAL MEDIA & EXTERNAL INTEGRATIONS
+// ============================================================================
+
+model SocialProfile {
+  id          String   @id @default(cuid())
+  contactId   String
+  platform    SocialPlatform
+  username    String?
+  profileUrl  String?
+  profileId   String?  // External platform ID
+  isVerified  Boolean  @default(false)
+  lastSyncAt  DateTime?
+  metadata    Json?    // Platform-specific data
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  
+  @@unique([contactId, platform])
+  @@map("social_profiles")
+}
+
+model ExternalIntegration {
+  id          String   @id @default(cuid())
+  name        String
+  type        IntegrationType
+  config      Json     // Integration configuration
+  isActive    Boolean  @default(true)
+  lastSyncAt  DateTime?
+  syncStatus  SyncStatus @default(IDLE)
+  errorMessage String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("external_integrations")
+}
+
+// ============================================================================
+// CUSTOM FIELDS & EXTENSIBILITY
+// ============================================================================
+
+model CustomField {
+  id          String   @id @default(cuid())
+  name        String
+  label       String
+  type        CustomFieldType
+  entityType  EntityType
+  isRequired  Boolean  @default(false)
+  defaultValue String?
+  options     String[] // For dropdown/radio fields
+  validation  Json?    // Validation rules
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  values      CustomFieldValue[]
+  
+  @@unique([name, entityType])
+  @@map("custom_fields")
+}
+
+model CustomFieldValue {
+  id           String   @id @default(cuid())
+  customFieldId String
+  entityType   EntityType
+  entityId     String
+  value        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  customField  CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  contact      Contact?    @relation("ContactCustomFields", fields: [entityId], references: [id])
+  company      Company?    @relation("CompanyCustomFields", fields: [entityId], references: [id])
+  deal         Deal?       @relation("DealCustomFields", fields: [entityId], references: [id])
+  lead         Lead?       @relation("LeadCustomFields", fields: [entityId], references: [id])
+  task         Task?       @relation("TaskCustomFields", fields: [entityId], references: [id])
+  content      Content?    @relation("ContentCustomFields", fields: [entityId], references: [id])
+  communication Communication? @relation("CommunicationCustomFields", fields: [entityId], references: [id])
+
+  @@unique([customFieldId, entityType, entityId])
+  @@map("custom_field_values")
+}
+
+// ============================================================================
+// AUDIT & TRACKING
+// ============================================================================
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  entityType  EntityType
+  entityId    String
+  action      AuditAction
+  fieldName   String?
+  oldValue    String?
+  newValue    String?
+  metadata    Json?    // Additional context
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  userId      String
+  user        User     @relation("AuditLogUser", fields: [userId], references: [id])
+  contact     Contact? @relation("ContactAuditLog", fields: [entityId], references: [id])
+  company     Company? @relation("CompanyAuditLog", fields: [entityId], references: [id])
+  deal        Deal?    @relation("DealAuditLog", fields: [entityId], references: [id])
+  lead        Lead?    @relation("LeadAuditLog", fields: [entityId], references: [id])
+  
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum GroupType {
+  SALES_TEAM
+  MARKETING_TEAM
+  FINANCE_TEAM
+  MANAGEMENT
+  CUSTOM
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum LeadSource {
+  WEBSITE
+  EMAIL_CAMPAIGN
+  SOCIAL_MEDIA
+  REFERRAL
+  COLD_CALL
+  TRADE_SHOW
+  WEBINAR
+  ADVERTISEMENT
+  PARTNER
+  EVENT
+  PAID_SEARCH
+  ORGANIC_SEARCH
+  DIRECT_MAIL
+  TELEMARKETING
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  CONVERTED
+  DEAD
+  NURTURING
+}
+
+enum CompanySize {
+  MICRO_1_10
+  SMALL_11_50
+  MEDIUM_51_200
+  LARGE_201_1000
+  ENTERPRISE_1000_PLUS
+}
+
+enum ResearchType {
+  COMPANY_INFO
+  FINANCIAL_DATA
+  MARKET_ANALYSIS
+  COMPETITOR_ANALYSIS
+  NEWS_ARTICLES
+  SOCIAL_MEDIA
+  AI_GENERATED
+  OTHER
+}
+
+enum LeadListType {
+  PROSPECTING
+  EVENT_ATTENDEES
+  WEBCAST_INVITEES
+  COLD_CALL_LIST
+  NURTURING
+  CUSTOM
+}
+
+enum LeadActivityType {
+  PAGE_VIEW
+  EMAIL_OPEN
+  EMAIL_CLICK
+  FORM_SUBMISSION
+  PHONE_CALL
+  MEETING
+  SOCIAL_ENGAGEMENT
+  OTHER
+}
+
+enum DealStage {
+  PROSPECTING
+  QUALIFYING
+  PROPOSING
+  NEGOTIATING
+  FOLLOW_UP
+  CLOSED_WON
+  CLOSED_LOST
+  ON_HOLD
+}
+
+enum ContentType {
+  WEB_PAGE
+  PODCAST
+  VIDEO
+  PDF
+  BROCHURE
+  CASE_STUDY
+  PRESS_RELEASE
+  BLOG_POST
+  WHITEPAPER
+  WEBINAR
+  SOCIAL_POST
+  ADVERTISEMENT
+  OTHER
+}
+
+enum ContentInteractionType {
+  VIEW
+  DOWNLOAD
+  SHARE
+  LIKE
+  COMMENT
+  CLICK
+  WATCH
+  LISTEN
+  OTHER
+}
+
+enum WorkflowType {
+  EVENT_FOLLOW_UP
+  WEBCAST_MANAGEMENT
+  LEAD_NURTURING
+  DEAL_FOLLOW_UP
+  CUSTOMER_ONBOARDING
+  CUSTOM
+}
+
+enum TaskType {
+  CALL
+  EMAIL
+  MEETING
+  FOLLOW_UP
+  DEMO
+  PROPOSAL
+  CONTRACT
+  RESEARCH
+  CONTENT_CREATION
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DEFERRED
+}
+
+enum CommunicationType {
+  EMAIL
+  PHONE_CALL
+  MEETING
+  TEXT_MESSAGE
+  WHATSAPP
+  VIDEO_CALL
+  NOTE
+  SOCIAL_MESSAGE
+  DIRECT_MAIL
+}
+
+enum CommunicationStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  DELIVERED
+  OPENED
+  RESPONDED
+  FAILED
+  CANCELLED
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum NoteType {
+  GENERAL
+  MEETING_NOTES
+  CALL_NOTES
+  RESEARCH_NOTES
+  TASK_NOTES
+  OTHER
+}
+
+enum SocialPlatform {
+  LINKEDIN
+  FACEBOOK
+  TWITTER
+  INSTAGRAM
+  YOUTUBE
+  TIKTOK
+  OTHER
+}
+
+enum IntegrationType {
+  EMAIL_PROVIDER
+  SMS_PROVIDER
+  SOCIAL_MEDIA
+  CRM_SYNC
+  MARKETING_AUTOMATION
+  ANALYTICS
+  OTHER
+}
+
+enum SyncStatus {
+  IDLE
+  SYNCING
+  SUCCESS
+  FAILED
+  PAUSED
+}
+
+enum CustomFieldType {
+  TEXT
+  TEXTAREA
+  NUMBER
+  DECIMAL
+  DATE
+  DATETIME
+  BOOLEAN
+  DROPDOWN
+  MULTI_SELECT
+  RADIO
+  CHECKBOX
+  URL
+  EMAIL
+  PHONE
+  CURRENCY
+}
+
+enum EntityType {
+  CONTACT
+  COMPANY
+  DEAL
+  LEAD
+  TASK
+  CONTENT
+  COMMUNICATION
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  STATUS_CHANGE
+  ASSIGNMENT_CHANGE
+  STAGE_CHANGE
+}
