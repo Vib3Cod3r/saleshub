@@ -5,14 +5,11 @@ import {
   MagnifyingGlassIcon, 
   ChevronDownIcon, 
   PlusIcon, 
-  FunnelIcon,
   EllipsisHorizontalIcon,
-  ChevronUpIcon,
-  ChevronDownIcon as ChevronDown,
-  ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronUpIcon
 } from '@heroicons/react/24/outline'
 import { LockClosedIcon } from '@heroicons/react/24/solid'
+import { CreateContactModal } from '@/components/contacts/create-contact-modal'
 
 interface Contact {
   id: string
@@ -24,6 +21,13 @@ interface Contact {
   company?: {
     name: string
   }
+  owner?: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+  leadStatus?: string
   createdAt: string
   updatedAt: string
 }
@@ -39,11 +43,9 @@ interface ContactsResponse {
 }
 
 export default function ContactsPage() {
-  const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
-  const [currentView, setCurrentView] = useState('All contacts')
   const [searchQuery, setSearchQuery] = useState('')
   const [allContacts, setAllContacts] = useState<Contact[]>([])
   const [pagination, setPagination] = useState({
@@ -59,6 +61,7 @@ export default function ContactsPage() {
     key: null,
     direction: 'asc'
   })
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
   // We no longer need to fetch contacts on page change since we're using allContacts
   // useEffect(() => {
@@ -104,7 +107,8 @@ export default function ContactsPage() {
       }
 
       const data: ContactsResponse = await response.json()
-      setContacts(data.data)
+      console.log('Received contacts data:', data.data) // Debug log
+      setAllContacts(data.data) // Set the contacts data
       setPagination(prev => ({
         ...prev,
         total: data.pagination.total,
@@ -181,6 +185,13 @@ export default function ContactsPage() {
     return contact.company?.name || '--'
   }
 
+  const getContactOwner = (contact: Contact) => {
+    if (contact.owner) {
+      return `${contact.owner.firstName} ${contact.owner.lastName}`
+    }
+    return 'No owner'
+  }
+
   const getContactAvatar = (contact: Contact) => {
     const name = getContactName(contact)
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -237,6 +248,10 @@ export default function ContactsPage() {
           aValue = getContactCompany(a).toLowerCase()
           bValue = getContactCompany(b).toLowerCase()
           break
+        case 'owner':
+          aValue = getContactOwner(a).toLowerCase()
+          bValue = getContactOwner(b).toLowerCase()
+          break
         case 'lastActivity':
           aValue = new Date(a.updatedAt).getTime()
           bValue = new Date(b.updatedAt).getTime()
@@ -275,6 +290,13 @@ export default function ContactsPage() {
       minute: '2-digit',
       timeZoneName: 'short'
     })
+  }
+
+  const handleCreateContactSuccess = () => {
+    setIsCreateModalOpen(false)
+    // Refresh the contacts data
+    fetchAllContacts()
+    fetchContacts()
   }
 
   if (loading) {
@@ -321,7 +343,10 @@ export default function ContactsPage() {
             <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
               Import
             </button>
-            <button className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600">
+            <button 
+              onClick={() => setIsCreateModalOpen(true)}
+              className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600"
+            >
               Create contact
             </button>
           </div>
@@ -355,6 +380,20 @@ export default function ContactsPage() {
               </button>
               <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">My contacts</button>
               <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Unassigned contacts</button>
+              <select 
+                className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                onChange={(e) => {
+                  // TODO: Implement owner filtering
+                  console.log('Filter by owner:', e.target.value)
+                }}
+              >
+                <option value="">All owners</option>
+                <option value="7ed98e09-6460-49aa-8f9e-6efbe9ebffb7">Ted Tse</option>
+                <option value="0f4062f4-cde1-4a4e-83e4-2be22f02368b">Admin User</option>
+                <option value="b202f2a9-13fe-41f1-be43-df14aa2001e0">Test User</option>
+                <option value="8b531e80-6526-4d0c-93ce-db70cc2366ea">Theodore Tse</option>
+                <option value="ba774a5b-22b2-4766-b985-97548b2380dc">Admin User (example.com)</option>
+              </select>
               <PlusIcon className="h-4 w-4 text-gray-400" />
             </div>
           </div>
@@ -458,14 +497,29 @@ export default function ContactsPage() {
                   </button>
                 </th>
                 <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('owner')}
+                  >
                     <span>CONTACT OWNER</span>
                     <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'owner' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'owner' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
                     </div>
                     <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
+                  </button>
                 </th>
                 <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
@@ -555,7 +609,7 @@ export default function ContactsPage() {
                       <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
                         <span className="text-xs text-gray-600">👤</span>
                       </div>
-                      <span className="text-sm text-gray-900">No owner</span>
+                      <span className="text-sm text-gray-900">{getContactOwner(contact)}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
@@ -568,9 +622,18 @@ export default function ContactsPage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">{formatDate(contact.updatedAt)}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                      Open
-                    </span>
+                    {(() => {
+                      console.log('Contact lead status:', contact.leadStatus, 'for contact:', contact.firstName, contact.lastName)
+                      return contact.leadStatus ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                          {contact.leadStatus}
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                          --
+                        </span>
+                      )
+                    })()}
                   </td>
                 </tr>
               ))}
@@ -662,6 +725,13 @@ export default function ContactsPage() {
           </button>
         </div>
       </div>
+
+      {/* Create Contact Modal */}
+      <CreateContactModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleCreateContactSuccess}
+      />
     </div>
   )
 }
