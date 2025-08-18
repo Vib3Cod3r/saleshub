@@ -25,6 +25,7 @@ A comprehensive, enterprise-grade Customer Relationship Management (CRM) databas
 - **Social Media Integration**: Social profile tracking and engagement
 - **External Integrations**: API-ready for third-party service connections
 - **Multi-currency Support**: International business support
+- **Advanced Address Management**: Comprehensive address handling with geocoding, validation, and standardization
 
 ## 🏗️ Database Schema Overview
 
@@ -35,6 +36,17 @@ A comprehensive, enterprise-grade Customer Relationship Management (CRM) databas
 - **UserRole**: Flexible role definitions with JSON-based permissions
 - **UserGroup**: Team organization and collaboration groups
 - **UserGroupMember**: Group membership management
+
+#### Address Management
+- **Address**: Centralized address storage with geographic coordinates and timezone support
+- **AddressFormat**: Country-specific address formatting rules and validation patterns
+- **AddressGeocoding**: Geographic coordinate data from multiple mapping providers
+- **AddressValidation**: Address validation results from postal services
+- **AddressStandardization**: Standardized address formats for consistency
+- **AddressHistory**: Complete audit trail of address changes and updates
+- **CompanyAddress**: Company address relationships supporting business, billing, head office, branch, warehouse, and shipping addresses
+- **ContactAddress**: Contact address relationships supporting home, work, billing, and shipping addresses
+- **LeadAddress**: Lead address relationships for prospect location tracking
 
 #### Contact & Company Management
 - **Contact**: Comprehensive contact profiles with personal and professional details
@@ -84,12 +96,14 @@ A comprehensive, enterprise-grade Customer Relationship Management (CRM) databas
 4. **Extensibility**: Custom fields and user-defined extensions
 5. **Performance**: Indexed fields for common queries
 6. **Scalability**: Designed for enterprise-level data volumes
+7. **Address Flexibility**: Comprehensive address management supporting multiple address types, geocoding, validation, and standardization
 
 ### AI Integration Points
 - **CompanyResearch**: Store AI-generated company insights
 - **LeadScoring**: AI-powered lead qualification
 - **ContentRecommendation**: Track content engagement for AI learning
 - **PredictiveAnalytics**: Historical data for AI model training
+- **AddressIntelligence**: AI-powered address validation and geocoding
 
 ## 📊 Data Flow Examples
 
@@ -111,6 +125,230 @@ A comprehensive, enterprise-grade Customer Relationship Management (CRM) databas
 5. **Lead Nurturing**: Follow up based on content interests
 6. **Sales Conversion**: Convert engaged leads to customers
 
+## 🏠 Advanced Address Management System
+
+### Centralized Address Storage
+The schema implements a sophisticated, enterprise-grade address management system that provides:
+
+- **Single Source of Truth**: All addresses stored in one table with consistent formatting
+- **Multiple Address Types**: Support for various address categories per entity
+- **Geographic Intelligence**: Latitude/longitude coordinates and timezone support
+- **Flexible Relationships**: Many-to-many relationships between entities and addresses
+- **Address Validation**: Integration with postal services for address verification
+- **Geocoding Support**: Multiple mapping provider integrations
+- **Address Standardization**: Consistent formatting across all addresses
+- **Complete History**: Track all address changes and updates
+
+### Address Tables & Features
+
+#### Core Address Table
+```typescript
+interface Address {
+  id: string;
+  type: AddressType;           // STREET, PO_BOX, SUITE, FLOOR, UNIT, BUILDING
+  isPrimary: boolean;          // Primary address flag
+  address1: string;            // Main address line
+  address2?: string;           // Secondary address line (suite, unit, etc.)
+  city: string;                // City
+  state?: string;              // State/province
+  zipCode?: string;            // Postal code
+  country: string;             // Country
+  latitude?: number;           // Geographic coordinates
+  longitude?: number;          // Geographic coordinates
+  timezone?: string;           // Timezone for location
+  notes?: string;              // Additional address notes
+  isVerified: boolean;         // Verification status
+  verificationDate?: DateTime; // When verification was completed
+}
+```
+
+#### Address Format Management
+```typescript
+interface AddressFormat {
+  country: string;             // Country code
+  format: string;              // Address format template
+  required: string[];          // Required fields for this country
+  optional: string[];          // Optional fields for this country
+  postalCodeRegex?: string;    // Postal code validation regex
+  stateList: string[];         // Valid states/provinces for this country
+}
+```
+
+#### Address Geocoding
+```typescript
+interface AddressGeocoding {
+  addressId: string;
+  provider: GeocodingProvider; // GOOGLE_MAPS, MAPBOX, HERE_MAPS, etc.
+  accuracy: GeocodingAccuracy; // ADDRESS, STREET, CITY, etc.
+  confidence: number;          // 0-1 confidence score
+  formattedAddress: string;    // Provider-formatted address
+  components: Json;            // Structured address components
+  metadata: Json;              // Provider-specific data
+}
+```
+
+#### Address Validation
+```typescript
+interface AddressValidation {
+  addressId: string;
+  provider: ValidationProvider; // USPS, ROYAL_MAIL, CANADA_POST, etc.
+  isValid: boolean;            // Validation result
+  confidence: number;          // 0-1 confidence score
+  suggestions: Json;           // Suggested corrections
+  errors: string[];            // Validation error messages
+  warnings: string[];          // Validation warnings
+}
+```
+
+#### Address Standardization
+```typescript
+interface AddressStandardization {
+  addressId: string;
+  standardizedAddress: string; // Standardized format
+  components: Json;            // Structured components
+  quality: AddressQuality;     // UNKNOWN, POOR, FAIR, GOOD, EXCELLENT
+  confidence: number;          // 0-1 confidence score
+  standardizer: string;        // Service used
+}
+```
+
+#### Address History Tracking
+```typescript
+interface AddressHistory {
+  addressId: string;
+  changeType: AddressChangeType; // CREATED, UPDATED, VERIFIED, VALIDATED, etc.
+  oldValue?: string;            // Previous value
+  newValue?: string;            // New value
+  changedBy: string;            // Who made the change
+  reason?: string;              // Reason for change
+  metadata: Json;               // Additional context
+}
+```
+
+### Address Types Supported
+
+#### Company Addresses
+- **BUSINESS**: Primary business location
+- **BILLING**: Billing and invoicing address
+- **HEAD_OFFICE**: Corporate headquarters
+- **BRANCH**: Branch office locations
+- **WAREHOUSE**: Storage and distribution centers
+- **SHIPPING**: Shipping and receiving addresses
+
+#### Contact Addresses
+- **HOME**: Personal residence
+- **WORK**: Professional workplace
+- **BILLING**: Personal billing address
+- **SHIPPING**: Preferred shipping address
+- **OTHER**: Additional address types
+
+#### Lead Addresses
+- **Primary**: Main prospect location for targeting and communication
+
+### Address Relationship Management
+
+#### Company Address Relationships
+```typescript
+interface CompanyAddress {
+  companyId: string;
+  addressId: string;
+  addressType: CompanyAddressType;
+  isPrimary: boolean;
+  startDate: DateTime;         // When this address became active
+  endDate?: DateTime;          // When this address became inactive
+  notes?: string;              // Additional context
+}
+```
+
+#### Contact Address Relationships
+```typescript
+interface ContactAddress {
+  contactId: string;
+  addressId: string;
+  isPrimary: boolean;
+  addressType: ContactAddressType;
+  startDate: DateTime;         // When this address became active
+  endDate?: DateTime;          // When this address became inactive
+  notes?: string;              // Additional context
+}
+```
+
+#### Lead Address Relationships
+```typescript
+interface LeadAddress {
+  leadId: string;
+  addressId: string;
+  isPrimary: boolean;
+  startDate: DateTime;         // When this address became active
+  endDate?: DateTime;          // When this address became inactive
+  notes?: string;              // Additional context
+}
+```
+
+### Address Intelligence Features
+
+#### Geocoding Providers
+- **Google Maps**: High accuracy, comprehensive coverage
+- **Mapbox**: Cost-effective, good performance
+- **HERE Maps**: Enterprise-focused, reliable
+- **OpenStreetMap**: Free, community-driven
+- **Custom**: Integration with internal mapping systems
+
+#### Validation Providers
+- **USPS**: United States Postal Service
+- **Royal Mail**: United Kingdom postal service
+- **Canada Post**: Canadian postal service
+- **Australia Post**: Australian postal service
+- **Custom**: Integration with other postal services
+
+#### Geocoding Accuracy Levels
+- **UNKNOWN**: Unable to determine accuracy
+- **COUNTRY**: Country-level accuracy
+- **REGION**: State/province-level accuracy
+- **SUB_REGION**: County/district-level accuracy
+- **TOWN**: City-level accuracy
+- **POSTCODE**: Postal code-level accuracy
+- **STREET**: Street-level accuracy
+- **INTERSECTION**: Intersection-level accuracy
+- **ADDRESS**: Building-level accuracy
+- **PREMISE**: Property-level accuracy
+- **SUBPREMISE**: Unit/room-level accuracy
+
+### Benefits of Advanced Address Management System
+
+1. **Data Consistency**: Standardized address format across all entities
+2. **Geographic Analytics**: Location-based reporting and territory management
+3. **Multi-location Support**: Companies can have multiple address types
+4. **Address History**: Track address changes over time with full audit trail
+5. **International Support**: Flexible country and timezone handling with country-specific formats
+6. **Geocoding Ready**: Built-in support for mapping and location services
+7. **Validation Integration**: Postal service integration for address verification
+8. **Standardization**: Consistent address formatting across all systems
+9. **Quality Metrics**: Confidence scores and accuracy levels for all address data
+10. **Provider Flexibility**: Support for multiple geocoding and validation services
+
+### Address Management Use Cases
+
+#### Sales Territory Management
+- Assign leads and contacts to sales reps based on geographic proximity
+- Analyze sales performance by region and territory
+- Optimize territory boundaries for maximum coverage
+
+#### Marketing Campaigns
+- Target prospects by location for regional campaigns
+- Analyze campaign performance by geographic area
+- Optimize marketing spend based on location data
+
+#### Customer Service
+- Route support tickets to appropriate regional teams
+- Provide location-specific product recommendations
+- Optimize service delivery based on customer location
+
+#### Compliance & Reporting
+- Track address changes for regulatory compliance
+- Generate location-based reports for stakeholders
+- Maintain audit trails for address modifications
+
 ## 🚀 Getting Started
 
 ### 1. Database Setup
@@ -119,7 +357,7 @@ A comprehensive, enterprise-grade Customer Relationship Management (CRM) databas
 npm install
 
 # Set up environment variables
-cp .env.example .env
+cp env.template .env
 # Edit .env with your database connection string
 
 # Generate Prisma client
@@ -191,6 +429,7 @@ The schema supports building:
 - **Sales Forecasting**: Predictive revenue analytics
 - **Customer Churn Prediction**: Early warning systems
 - **Automated Follow-up**: Intelligent communication scheduling
+- **Address Intelligence**: AI-powered address validation and geocoding
 
 ## 🤝 Contributing
 

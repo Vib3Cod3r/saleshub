@@ -101,128 +101,6 @@ model UserGroupMember {
 }
 
 // ============================================================================
-// ADDRESS MANAGEMENT
-// ============================================================================
-
-model Address {
-  id          String   @id @default(cuid())
-  type        AddressType
-  isPrimary   Boolean  @default(false)
-  address1    String
-  address2    String?
-  city        String
-  state       String?
-  zipCode     String?
-  country     String
-  latitude    Float?
-  longitude   Float?
-  timezone    String?
-  notes       String?
-  isVerified  Boolean  @default(false)
-  verificationDate DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  companies   CompanyAddress[]
-  contacts   ContactAddress[]
-  leads      LeadAddress[]
-  history    AddressHistory[]
-  geocoding  AddressGeocoding[]
-  validation AddressValidation[]
-  
-  @@map("addresses")
-}
-
-model AddressHistory {
-  id          String   @id @default(cuid())
-  addressId   String
-  changeType  AddressChangeType
-  oldValue    String?
-  newValue    String?
-  changedBy   String
-  reason      String?
-  metadata    Json?    // Additional change context
-  createdAt   DateTime @default(now())
-
-  // Relations
-  address     Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
-  
-  @@map("address_history")
-}
-
-model AddressGeocoding {
-  id          String   @id @default(cuid())
-  addressId   String
-  provider    GeocodingProvider
-  accuracy    GeocodingAccuracy
-  confidence  Float?   // 0-1 confidence score
-  formattedAddress String?
-  components  Json?    // Structured address components
-  metadata    Json?    // Provider-specific data
-  lastUpdated DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  // Relations
-  address     Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
-  
-  @@unique([addressId, provider])
-  @@map("address_geocoding")
-}
-
-model AddressValidation {
-  id          String   @id @default(cuid())
-  addressId   String
-  provider    ValidationProvider
-  isValid     Boolean
-  confidence  Float?   // 0-1 confidence score
-  suggestions Json?    // Suggested corrections
-  errors      String[] // Validation error messages
-  warnings    String[] // Validation warnings
-  metadata    Json?    // Provider-specific data
-  validatedAt DateTime @default(now())
-  createdAt   DateTime @default(now())
-
-  // Relations
-  address     Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
-  
-  @@unique([addressId, provider])
-  @@map("address_validation")
-}
-
-model AddressFormat {
-  id          String   @id @default(cuid())
-  country     String   @unique
-  format      String   // Address format template
-  required    String[] // Required fields for this country
-  optional    String[] // Optional fields for this country
-  postalCodeRegex String? // Postal code validation regex
-  stateList   String[] // Valid states/provinces for this country
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("address_formats")
-}
-
-model AddressStandardization {
-  id          String   @id @default(cuid())
-  addressId   String
-  standardizedAddress String
-  components  Json?    // Standardized address components
-  quality     AddressQuality
-  confidence  Float?   // 0-1 confidence score
-  standardizer String  // Standardization service used
-  metadata    Json?    // Standardization details
-  createdAt   DateTime @default(now())
-
-  // Relations
-  address     Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
-  
-  @@map("address_standardization")
-}
-
-// ============================================================================
 // CONTACT & COMPANY MANAGEMENT
 // ============================================================================
 
@@ -246,6 +124,16 @@ model Contact {
   birthday          DateTime?
   spouseName        String?
   childrenNames     String?  // JSON array of names
+  address           String?
+  address2          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  timezone          String?
+  language          String?
   leadSource        LeadSource?
   leadStatus        LeadStatus @default(NEW)
   leadScore         Int?     @default(0)
@@ -262,7 +150,6 @@ model Contact {
   company           Company? @relation(fields: [companyId], references: [id])
   ownerId           String?
   owner             User?    @relation("ContactOwner", fields: [ownerId], references: [id])
-  addresses         ContactAddress[]
   deals             Deal[]
   leads             Lead[]
   tasks             Task[]
@@ -275,26 +162,6 @@ model Contact {
   @@map("contacts")
 }
 
-model ContactAddress {
-  id          String   @id @default(cuid())
-  contactId   String
-  addressId   String
-  isPrimary   Boolean  @default(false)
-  addressType ContactAddressType
-  startDate   DateTime @default(now())
-  endDate     DateTime?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  contact    Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  address    Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
-
-  @@unique([contactId, addressId, addressType])
-  @@map("contact_addresses")
-}
-
 model Company {
   id                String   @id @default(cuid())
   name              String
@@ -304,6 +171,15 @@ model Company {
   phone             String?
   fax               String?
   email             String?
+  address           String?
+  address2          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  timezone          String?
   industry          String?
   sector            String?
   size              CompanySize?
@@ -327,7 +203,6 @@ model Company {
   subsidiaries      Company[] @relation("CompanyHierarchy")
   ownerId           String
   owner             User     @relation("CompanyOwner", fields: [ownerId], references: [id])
-  addresses         CompanyAddress[]
   contacts          Contact[]
   deals             Deal[]
   leads             Lead[]
@@ -336,26 +211,6 @@ model Company {
   auditLogs         AuditLog[] @relation("CompanyAuditLog")
   
   @@map("companies")
-}
-
-model CompanyAddress {
-  id          String   @id @default(cuid())
-  companyId   String
-  addressId   String
-  addressType CompanyAddressType
-  isPrimary   Boolean  @default(false)
-  startDate   DateTime @default(now())
-  endDate     DateTime?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  address    Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
-
-  @@unique([companyId, addressId, addressType])
-  @@map("company_addresses")
 }
 
 model CompanyResearch {
@@ -391,6 +246,11 @@ model Lead {
   company           String?
   jobTitle          String?
   website           String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
   source            LeadSource
   sourceDetails     String?  // Specific campaign, event, etc.
   leadScore         Int      @default(0)
@@ -409,33 +269,13 @@ model Lead {
   // Relations
   assignedTo        User?    @relation("LeadOwner", fields: [assignedToId], references: [id])
   convertedToContact Contact? @relation("LeadToContact", fields: [convertedToContactId], references: [id])
-  convertedToCompany Company? @relation("LeadToCompany", fields: [convertedToContactId], references: [id])
-  addresses         LeadAddress[]
+  convertedToCompany Company? @relation("LeadToCompany", fields: [convertedToCompanyId], references: [id])
   leadLists         LeadListMember[]
   activities        LeadActivity[]
   customFields      CustomFieldValue[] @relation("LeadCustomFields")
   auditLogs         AuditLog[] @relation("LeadAuditLog")
   
   @@map("leads")
-}
-
-model LeadAddress {
-  id          String   @id @default(cuid())
-  leadId      String
-  addressId   String
-  isPrimary   Boolean  @default(false)
-  startDate   DateTime @default(now())
-  endDate     DateTime?
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  lead       Lead    @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  address    Address @relation(fields: [addressId], references: [id], onDelete: Cascade)
-
-  @@unique([leadId, addressId])
-  @@map("lead_addresses")
 }
 
 model LeadList {
@@ -868,80 +708,6 @@ enum GroupType {
   FINANCE_TEAM
   MANAGEMENT
   CUSTOM
-}
-
-enum AddressType {
-  STREET
-  PO_BOX
-  SUITE
-  FLOOR
-  UNIT
-  BUILDING
-}
-
-enum CompanyAddressType {
-  BUSINESS
-  BILLING
-  HEAD_OFFICE
-  BRANCH
-  WAREHOUSE
-  SHIPPING
-}
-
-enum ContactAddressType {
-  HOME
-  WORK
-  BILLING
-  SHIPPING
-  OTHER
-}
-
-enum AddressChangeType {
-  CREATED
-  UPDATED
-  DELETED
-  VERIFIED
-  VALIDATED
-  GEOCODED
-  STANDARDIZED
-}
-
-enum GeocodingProvider {
-  GOOGLE_MAPS
-  MAPBOX
-  HERE_MAPS
-  OPENSTREETMAP
-  CUSTOM
-}
-
-enum GeocodingAccuracy {
-  UNKNOWN
-  COUNTRY
-  REGION
-  SUB_REGION
-  TOWN
-  POSTCODE
-  STREET
-  INTERSECTION
-  ADDRESS
-  PREMISE
-  SUBPREMISE
-}
-
-enum ValidationProvider {
-  USPS
-  ROYAL_MAIL
-  CANADA_POST
-  AUSTRALIA_POST
-  CUSTOM
-}
-
-enum AddressQuality {
-  UNKNOWN
-  POOR
-  FAIR
-  GOOD
-  EXCELLENT
 }
 
 enum Gender {

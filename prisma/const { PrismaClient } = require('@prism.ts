@@ -23,17 +23,8 @@ async function main() {
   await prisma.lead.deleteMany();
   await prisma.companyResearch.deleteMany();
   await prisma.socialProfile.deleteMany();
-  await prisma.contactAddress.deleteMany();
-  await prisma.companyAddress.deleteMany();
-  await prisma.leadAddress.deleteMany();
   await prisma.contact.deleteMany();
   await prisma.company.deleteMany();
-  await prisma.addressStandardization.deleteMany();
-  await prisma.addressValidation.deleteMany();
-  await prisma.addressGeocoding.deleteMany();
-  await prisma.addressHistory.deleteMany();
-  await prisma.address.deleteMany();
-  await prisma.addressFormat.deleteMany();
   await prisma.userGroupMember.deleteMany();
   await prisma.userGroup.deleteMany();
   await prisma.user.deleteMany();
@@ -110,225 +101,6 @@ async function main() {
 
   console.log('👤 Created users');
 
-  // Create Address Formats
-  await prisma.addressFormat.createMany({
-    data: [
-      {
-        country: 'USA',
-        format: '{address1}\n{address2}\n{city}, {state} {zipCode}\n{country}',
-        required: ['address1', 'city', 'state', 'zipCode', 'country'],
-        optional: ['address2'],
-        postalCodeRegex: '^\\d{5}(-\\d{4})?$',
-        stateList: ['AL', 'AK', 'AZ', 'AR', 'CA', 'CO', 'CT', 'DE', 'FL', 'GA', 'HI', 'ID', 'IL', 'IN', 'IA', 'KS', 'KY', 'LA', 'ME', 'MD', 'MA', 'MI', 'MN', 'MS', 'MO', 'MT', 'NE', 'NV', 'NH', 'NJ', 'NM', 'NY', 'NC', 'ND', 'OH', 'OK', 'OR', 'PA', 'RI', 'SC', 'SD', 'TN', 'TX', 'UT', 'VT', 'VA', 'WA', 'WV', 'WI', 'WY']
-      },
-      {
-        country: 'Canada',
-        format: '{address1}\n{address2}\n{city}, {state} {zipCode}\n{country}',
-        required: ['address1', 'city', 'state', 'zipCode', 'country'],
-        optional: ['address2'],
-        postalCodeRegex: '^[A-Za-z]\\d[A-Za-z] \\d[A-Za-z]\\d$',
-        stateList: ['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']
-      },
-      {
-        country: 'UK',
-        format: '{address1}\n{address2}\n{city}\n{zipCode}\n{country}',
-        required: ['address1', 'city', 'zipCode', 'country'],
-        optional: ['address2'],
-        postalCodeRegex: '^[A-Z]{1,2}\\d[A-Z\\d]? ?\\d[A-Z]{2}$',
-        stateList: []
-      }
-    ]
-  });
-
-  console.log('🌍 Created address formats');
-
-  // Create Addresses
-  const techCorpBusinessAddress = await prisma.address.create({
-    data: {
-      type: 'STREET',
-      isPrimary: true,
-      address1: '123 Innovation Drive',
-      city: 'San Francisco',
-      state: 'CA',
-      zipCode: '94105',
-      country: 'USA',
-      timezone: 'America/Los_Angeles',
-      isVerified: true,
-      verificationDate: new Date('2024-01-15')
-    }
-  });
-
-  const techCorpBillingAddress = await prisma.address.create({
-    data: {
-      type: 'STREET',
-      isPrimary: false,
-      address1: '123 Innovation Drive',
-      address2: 'Suite 200',
-      city: 'San Francisco',
-      state: 'CA',
-      zipCode: '94105',
-      country: 'USA',
-      timezone: 'America/Los_Angeles',
-      isVerified: true,
-      verificationDate: new Date('2024-01-15')
-    }
-  });
-
-  const startupIncAddress = await prisma.address.create({
-    data: {
-      type: 'STREET',
-      isPrimary: true,
-      address1: '789 Startup Street',
-      city: 'Austin',
-      state: 'TX',
-      zipCode: '73301',
-      country: 'USA',
-      timezone: 'America/Chicago',
-      isVerified: true,
-      verificationDate: new Date('2024-01-15')
-    }
-  });
-
-  const johnSmithHomeAddress = await prisma.address.create({
-    data: {
-      type: 'STREET',
-      isPrimary: true,
-      address1: '123 Tech Street',
-      city: 'San Francisco',
-      state: 'CA',
-      zipCode: '94105',
-      country: 'USA',
-      timezone: 'America/Los_Angeles',
-      isVerified: true,
-      verificationDate: new Date('2024-01-15')
-    }
-  });
-
-  const alexJohnsonAddress = await prisma.address.create({
-    data: {
-      type: 'STREET',
-      isPrimary: true,
-      address1: '789 Innovation Blvd',
-      city: 'Austin',
-      state: 'TX',
-      zipCode: '73301',
-      country: 'USA',
-      timezone: 'America/Chicago',
-      isVerified: true,
-      verificationDate: new Date('2024-01-15')
-    }
-  });
-
-  const mariaGarciaAddress = await prisma.address.create({
-    data: {
-      type: 'STREET',
-      isPrimary: true,
-      address1: '456 Business Ave',
-      city: 'New York',
-      state: 'NY',
-      zipCode: '10001',
-      country: 'USA',
-      timezone: 'America/New_York',
-      isVerified: false
-    }
-  });
-
-  console.log('🏠 Created addresses');
-
-  // Create Address Geocoding
-  await prisma.addressGeocoding.createMany({
-    data: [
-      {
-        addressId: techCorpBusinessAddress.id,
-        provider: 'GOOGLE_MAPS',
-        accuracy: 'ADDRESS',
-        confidence: 0.95,
-        formattedAddress: '123 Innovation Drive, San Francisco, CA 94105, USA',
-        components: {
-          street_number: '123',
-          route: 'Innovation Drive',
-          locality: 'San Francisco',
-          administrative_area_level_1: 'CA',
-          postal_code: '94105',
-          country: 'USA'
-        },
-        metadata: { place_id: 'ChIJ...', types: ['street_address'] }
-      },
-      {
-        addressId: startupIncAddress.id,
-        provider: 'GOOGLE_MAPS',
-        accuracy: 'ADDRESS',
-        confidence: 0.92,
-        formattedAddress: '789 Startup Street, Austin, TX 73301, USA',
-        components: {
-          street_number: '789',
-          route: 'Startup Street',
-          locality: 'Austin',
-          administrative_area_level_1: 'TX',
-          postal_code: '73301',
-          country: 'USA'
-        },
-        metadata: { place_id: 'ChIJ...', types: ['street_address'] }
-      }
-    ]
-  });
-
-  console.log('🗺️ Created address geocoding');
-
-  // Create Address Validation
-  await prisma.addressValidation.createMany({
-    data: [
-      {
-        addressId: techCorpBusinessAddress.id,
-        provider: 'USPS',
-        isValid: true,
-        confidence: 0.98,
-        suggestions: [],
-        errors: [],
-        warnings: [],
-        metadata: { delivery_point_barcode: '1234567890', carrier_route: 'C001' }
-      },
-      {
-        addressId: mariaGarciaAddress.id,
-        provider: 'USPS',
-        isValid: false,
-        confidence: 0.45,
-        suggestions: ['456 Business Avenue', '456 Business Blvd'],
-        errors: ['Invalid street name'],
-        warnings: ['Address may not exist'],
-        metadata: { suggestions_count: 2 }
-      }
-    ]
-  });
-
-  console.log('✅ Created address validation');
-
-  // Create Address History
-  await prisma.addressHistory.createMany({
-    data: [
-      {
-        addressId: techCorpBusinessAddress.id,
-        changeType: 'VERIFIED',
-        oldValue: null,
-        newValue: 'Verified by USPS',
-        changedBy: 'system',
-        reason: 'Address verification completed',
-        metadata: { verification_method: 'USPS_API', timestamp: new Date().toISOString() }
-      },
-      {
-        addressId: mariaGarciaAddress.id,
-        changeType: 'VALIDATED',
-        oldValue: null,
-        newValue: 'Validation failed - suggestions provided',
-        changedBy: 'system',
-        reason: 'Address validation completed with errors',
-        metadata: { validation_method: 'USPS_API', error_count: 1 }
-      }
-    ]
-  });
-
-  console.log('📋 Created address history');
-
   // Create Companies
   const techCorp = await prisma.company.create({
     data: {
@@ -336,6 +108,11 @@ async function main() {
       website: 'https://techcorp.com',
       phone: '+1-555-0123',
       email: 'info@techcorp.com',
+      address: '123 Innovation Drive',
+      city: 'San Francisco',
+      state: 'CA',
+      zipCode: '94105',
+      country: 'USA',
       industry: 'Technology',
       size: 'MEDIUM_51_200',
       revenue: 25000000,
@@ -353,6 +130,11 @@ async function main() {
       website: 'https://startupinc.com',
       phone: '+1-555-0789',
       email: 'hello@startupinc.com',
+      address: '789 Startup Street',
+      city: 'Austin',
+      state: 'TX',
+      zipCode: '73301',
+      country: 'USA',
       industry: 'Technology',
       size: 'SMALL_11_50',
       revenue: 2000000,
@@ -365,38 +147,6 @@ async function main() {
   });
 
   console.log('🏢 Created companies');
-
-  // Link addresses to companies
-  await prisma.companyAddress.createMany({
-    data: [
-      {
-        companyId: techCorp.id,
-        addressId: techCorpBusinessAddress.id,
-        addressType: 'BUSINESS',
-        isPrimary: true,
-        startDate: new Date('2024-01-01'),
-        notes: 'Main business location'
-      },
-      {
-        companyId: techCorp.id,
-        addressId: techCorpBillingAddress.id,
-        addressType: 'BILLING',
-        isPrimary: false,
-        startDate: new Date('2024-01-01'),
-        notes: 'Billing and invoicing address'
-      },
-      {
-        companyId: startupInc.id,
-        addressId: startupIncAddress.id,
-        addressType: 'BUSINESS',
-        isPrimary: true,
-        startDate: new Date('2024-01-01'),
-        notes: 'Primary business location'
-      }
-    ]
-  });
-
-  console.log('🔗 Linked addresses to companies');
 
   // Create Company Research
   await prisma.companyResearch.create({
@@ -428,6 +178,11 @@ async function main() {
       isDecisionMaker: true,
       gender: 'MALE',
       birthday: new Date('1980-06-15'),
+      address: '123 Tech Street',
+      city: 'San Francisco',
+      state: 'CA',
+      zipCode: '94105',
+      country: 'USA',
       leadSource: 'WEBSITE',
       leadStatus: 'QUALIFIED',
       leadScore: 85,
@@ -450,6 +205,11 @@ async function main() {
       isDecisionMaker: true,
       gender: 'OTHER',
       birthday: new Date('1990-11-08'),
+      address: '789 Innovation Blvd',
+      city: 'Austin',
+      state: 'TX',
+      zipCode: '73301',
+      country: 'USA',
       leadSource: 'EVENT',
       leadStatus: 'NEW',
       leadScore: 65,
@@ -460,30 +220,6 @@ async function main() {
   });
 
   console.log('👥 Created contacts');
-
-  // Link addresses to contacts
-  await prisma.contactAddress.createMany({
-    data: [
-      {
-        contactId: contact1.id,
-        addressId: johnSmithHomeAddress.id,
-        addressType: 'HOME',
-        isPrimary: true,
-        startDate: new Date('2024-01-01'),
-        notes: 'Primary residence'
-      },
-      {
-        contactId: contact2.id,
-        addressId: alexJohnsonAddress.id,
-        addressType: 'WORK',
-        isPrimary: true,
-        startDate: new Date('2024-01-01'),
-        notes: 'Work address at startup office'
-      }
-    ]
-  });
-
-  console.log('🔗 Linked addresses to contacts');
 
   // Create Social Profiles
   await prisma.socialProfile.create({
@@ -518,19 +254,6 @@ async function main() {
   });
 
   console.log('🎯 Created leads');
-
-  // Link addresses to leads
-  await prisma.leadAddress.create({
-    data: {
-      leadId: lead1.id,
-      addressId: mariaGarciaAddress.id,
-      isPrimary: true,
-      startDate: new Date('2024-01-01'),
-      notes: 'Prospect location for targeting'
-    }
-  });
-
-  console.log('🔗 Linked addresses to leads');
 
   // Create Deals
   const deal1 = await prisma.deal.create({
@@ -632,20 +355,6 @@ async function main() {
   console.log('Admin: admin@saleshub.com / admin123');
   console.log('Manager: manager@saleshub.com / manager123');
   console.log('Sales Rep: rep@saleshub.com / rep123');
-  console.log('\n📊 Sample Data Summary:');
-  console.log('- Users: 3 (Admin, Sales Manager, Sales Rep)');
-  console.log('- Companies: 2 (TechCorp, Startup Inc.)');
-  console.log('- Addresses: 6 (Business, Billing, Home, Work)');
-  console.log('- Address Formats: 3 (USA, Canada, UK)');
-  console.log('- Address Geocoding: 2 (Google Maps)');
-  console.log('- Address Validation: 2 (USPS)');
-  console.log('- Address History: 2 (Verification, Validation)');
-  console.log('- Contacts: 2 (John Smith, Alex Johnson)');
-  console.log('- Leads: 1 (Maria Garcia)');
-  console.log('- Deals: 2 (TechCorp CRM, Startup Package)');
-  console.log('- Content: 1 (CRM Best Practices Guide)');
-  console.log('- Tasks: 1 (Follow-up call)');
-  console.log('- Communications: 1 (Welcome email)');
 }
 
 main()
