@@ -34,3 +34,34 @@ export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   return text.slice(0, maxLength) + '...'
 }
+
+// Lean API client
+const API_BASE = 'http://localhost:8089/api'
+
+export const apiClient = {
+  async fetch(endpoint: string, options: RequestInit = {}) {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    })
+    
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}))
+      throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
+  },
+
+  crm: {
+    companies: (limit = 5) => apiClient.fetch(`/crm/companies?limit=${limit}`),
+    contacts: (limit = 5) => apiClient.fetch(`/crm/contacts?limit=${limit}`),
+    leads: (limit = 5) => apiClient.fetch(`/crm/leads?limit=${limit}`),
+    deals: (limit = 5) => apiClient.fetch(`/crm/deals?limit=${limit}`),
+  }
+}

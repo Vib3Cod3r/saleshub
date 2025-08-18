@@ -10,19 +10,7 @@ import (
 	"time"
 )
 
-// PageVersion represents a page/endpoint version
-type PageVersion struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Path         string   `json:"path"`
-	Method       string   `json:"method"`
-	Version      string   `json:"version"`
-	LastModified time.Time `json:"lastModified"`
-	Checksum     string   `json:"checksum"`
-	Dependencies []string `json:"dependencies"`
-	Features     []string `json:"features"`
-	Status       string   `json:"status"` // "active", "deprecated", "development"
-}
+// PageVersion is defined in page_logger.go
 
 // DatabaseVersion represents a database version
 type DatabaseVersion struct {
@@ -44,15 +32,7 @@ type VersionSnapshot struct {
 	Notes     string           `json:"notes,omitempty"`
 }
 
-// RestartReport represents a restart planning report
-type RestartReport struct {
-	ActivePages      []PageVersion    `json:"activePages"`
-	DeprecatedPages  []PageVersion    `json:"deprecatedPages"`
-	ActiveDatabases  []DatabaseVersion `json:"activeDatabases"`
-	Recommendations  []string         `json:"recommendations"`
-	LastSnapshot     *VersionSnapshot `json:"lastSnapshot,omitempty"`
-	GeneratedAt      time.Time        `json:"generatedAt"`
-}
+// RestartReport is defined in page_logger.go
 
 // VersionTracker manages version tracking
 type VersionTracker struct {
@@ -207,12 +187,7 @@ func (vt *VersionTracker) GenerateRestartReport() RestartReport {
 	
 	activePages := vt.GetActivePages()
 	deprecatedPages := vt.GetDeprecatedPages()
-	activeDatabases := vt.GetActiveDatabases()
-	
-	var lastSnapshot *VersionSnapshot
-	if len(vt.snapshots) > 0 {
-		lastSnapshot = &vt.snapshots[len(vt.snapshots)-1]
-	}
+	// Note: ActiveDatabases and LastSnapshot are not used in this RestartReport structure
 	
 	var recommendations []string
 	
@@ -249,9 +224,8 @@ func (vt *VersionTracker) GenerateRestartReport() RestartReport {
 	return RestartReport{
 		ActivePages:     activePages,
 		DeprecatedPages: deprecatedPages,
-		ActiveDatabases: activeDatabases,
+		RecentActivity:  []PageLog{}, // Empty for now since we don't have page logs in this tracker
 		Recommendations: recommendations,
-		LastSnapshot:    lastSnapshot,
 		GeneratedAt:     time.Now(),
 	}
 }
@@ -364,20 +338,7 @@ func (vt *VersionTracker) loadPersistedData() {
 	}
 }
 
-// GenerateChecksum generates a simple checksum
-func GenerateChecksum(str string) string {
-	hash := 0
-	if len(str) == 0 {
-		return fmt.Sprintf("%d", hash)
-	}
-	
-	for _, char := range str {
-		hash = ((hash << 5) - hash) + int(char)
-		hash = hash & hash // Convert to 32-bit integer
-	}
-	
-	return fmt.Sprintf("%x", hash)
-}
+// GenerateChecksum is defined in page_logger.go
 
 // Global version tracker instance
 var GlobalVersionTracker *VersionTracker

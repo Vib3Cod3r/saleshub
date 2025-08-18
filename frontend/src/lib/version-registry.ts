@@ -580,4 +580,7 @@ class VersionRegistry {
 // Create singleton instance
 export const versionRegistry = new VersionRegistry()
 
+// Export the class for direct instantiation if needed
+export { VersionRegistry }
+
 export default versionRegistry

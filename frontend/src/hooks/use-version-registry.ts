@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from 'react'
-import versionRegistry, {
-  PageVersion,
-  DatabaseVersion,
-  APIVersion,
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { VersionRegistry } from '@/lib/version-registry'
+import { logRegistryError } from '@/lib/cursor-error-tracker'
+import { 
+  PageVersion, 
+  DatabaseVersion, 
+  APIVersion, 
   VersionSnapshot,
-  StartupValidation,
-  VersionDependency,
-  VersionCompatibility
+  ComponentStatus,
+  CompatibilityMatrix
 } from '@/lib/version-registry'
 
 export interface UseVersionRegistryOptions {
@@ -52,137 +53,188 @@ export interface UseVersionRegistryReturn {
   clearError: () => void
 }
 
-export function useVersionRegistry(options: UseVersionRegistryOptions = {}): UseVersionRegistryReturn {
+export function useVersionRegistry(options: {
+  autoValidate?: boolean
+  validateOnMount?: boolean
+} = {}) {
   const { autoValidate = true, validateOnMount = true } = options
   
+  // Use refs for stable references to prevent infinite loops
+  const versionRegistryRef = useRef<VersionRegistry>(new VersionRegistry())
+  const autoValidateRef = useRef(autoValidate)
+  const validateOnMountRef = useRef(validateOnMount)
+  
+  // Update refs when options change
+  useEffect(() => {
+    autoValidateRef.current = autoValidate
+    validateOnMountRef.current = validateOnMount
+  }, [autoValidate, validateOnMount])
+
+  const [error, setError] = useState<string | null>(null)
+  const [isValidating, setIsValidating] = useState(false)
+  const [startupValidation, setStartupValidation] = useState<{
+    isValid: boolean
+    issues: string[]
+    timestamp: Date
+  } | null>(null)
+
+  // State for registry data
   const [activePages, setActivePages] = useState<PageVersion[]>([])
   const [activeDatabases, setActiveDatabases] = useState<DatabaseVersion[]>([])
   const [activeAPIs, setActiveAPIs] = useState<APIVersion[]>([])
   const [deprecatedComponents, setDeprecatedComponents] = useState<Array<PageVersion | DatabaseVersion | APIVersion>>([])
   const [recentSnapshots, setRecentSnapshots] = useState<VersionSnapshot[]>([])
-  const [registryStats, setRegistryStats] = useState(versionRegistry.getRegistryStats())
-  const [startupValidation, setStartupValidation] = useState<StartupValidation | null>(null)
-  const [isValidating, setIsValidating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [registryStats, setRegistryStats] = useState<{
+    totalPages: number
+    totalDatabases: number
+    totalAPIs: number
+    totalSnapshots: number
+    lastUpdated: Date
+  }>({
+    totalPages: 0,
+    totalDatabases: 0,
+    totalAPIs: 0,
+    totalSnapshots: 0,
+    lastUpdated: new Date()
+  })
 
-  // Update registry state
+  // Stable update function using ref
   const updateRegistryState = useCallback(() => {
     try {
-      setActivePages(versionRegistry.getActivePages())
-      setActiveDatabases(versionRegistry.getActiveDatabases())
-      setActiveAPIs(versionRegistry.getActiveAPIs())
-      setDeprecatedComponents(versionRegistry.getDeprecatedComponents())
-      setRecentSnapshots(versionRegistry.getRecentSnapshots())
-      setRegistryStats(versionRegistry.getRegistryStats())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update registry state')
+      const registry = versionRegistryRef.current
+      setActivePages(registry.getActivePages())
+      setActiveDatabases(registry.getActiveDatabases())
+      setActiveAPIs(registry.getActiveAPIs())
+      setDeprecatedComponents(registry.getDeprecatedComponents())
+      setRecentSnapshots(registry.getRecentSnapshots())
+      setRegistryStats(registry.getRegistryStats())
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown registry error'
+      logRegistryError(errorMessage, 'updateRegistryState', 'getRegistryStats')
+      console.error('Error updating registry state:', error)
     }
   }, [])
 
-  // Validation function
-  const validateStartup = useCallback((): StartupValidation => {
-    setIsValidating(true)
-    setError(null)
+  // Stable validation function using ref
+  const validateStartup = useCallback(async () => {
+    if (isValidating) return
     
+    setIsValidating(true)
     try {
-      const validation = versionRegistry.validateStartup()
+      const registry = versionRegistryRef.current
+      const validation = await registry.validateStartup()
       setStartupValidation(validation)
-      return validation
+      
+      if (!validation.isValid) {
+        setError(`Startup validation failed: ${validation.issues.join(', ')}`)
+      } else {
+        setError(null)
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Validation failed'
       setError(errorMessage)
-      throw new Error(errorMessage)
+      setStartupValidation({
+        isValid: false,
+        issues: [errorMessage],
+        timestamp: new Date()
+      })
     } finally {
       setIsValidating(false)
     }
-  }, [])
+  }, [isValidating])
 
-  // Registration functions
+  // Registration functions with stable dependencies
   const registerPage = useCallback((page: Omit<PageVersion, 'lastModified'>) => {
     try {
       setError(null)
-      versionRegistry.registerPage(page)
+      versionRegistryRef.current.registerPage(page)
       updateRegistryState()
       
-      if (autoValidate) {
+      if (autoValidateRef.current) {
         validateStartup()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to register page')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to register page'
+      setError(errorMessage)
       throw err
     }
-  }, [autoValidate, updateRegistryState, validateStartup])
+  }, [updateRegistryState, validateStartup])
 
   const registerDatabase = useCallback((db: Omit<DatabaseVersion, 'lastModified'>) => {
     try {
       setError(null)
-      versionRegistry.registerDatabase(db)
+      versionRegistryRef.current.registerDatabase(db)
       updateRegistryState()
       
-      if (autoValidate) {
+      if (autoValidateRef.current) {
         validateStartup()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to register database')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to register database'
+      setError(errorMessage)
       throw err
     }
-  }, [autoValidate, updateRegistryState, validateStartup])
+  }, [updateRegistryState, validateStartup])
 
   const registerAPI = useCallback((api: Omit<APIVersion, 'lastModified'>) => {
     try {
       setError(null)
-      versionRegistry.registerAPI(api)
+      versionRegistryRef.current.registerAPI(api)
       updateRegistryState()
       
-      if (autoValidate) {
+      if (autoValidateRef.current) {
         validateStartup()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to register API')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to register API'
+      setError(errorMessage)
       throw err
     }
-  }, [autoValidate, updateRegistryState, validateStartup])
+  }, [updateRegistryState, validateStartup])
 
-  // Update functions
+  // Update functions with stable dependencies
   const updatePageVersion = useCallback((pageId: string, updates: Partial<PageVersion>) => {
     try {
       setError(null)
-      versionRegistry.updatePageVersion(pageId, updates)
+      versionRegistryRef.current.updatePageVersion(pageId, updates)
       updateRegistryState()
       
-      if (autoValidate) {
+      if (autoValidateRef.current) {
         validateStartup()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update page version')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update page version'
+      setError(errorMessage)
       throw err
     }
-  }, [autoValidate, updateRegistryState, validateStartup])
+  }, [updateRegistryState, validateStartup])
 
   const updateDatabaseVersion = useCallback((dbId: string, updates: Partial<DatabaseVersion>) => {
     try {
       setError(null)
-      versionRegistry.updateDatabaseVersion(dbId, updates)
+      versionRegistryRef.current.updateDatabaseVersion(dbId, updates)
       updateRegistryState()
       
-      if (autoValidate) {
+      if (autoValidateRef.current) {
         validateStartup()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update database version')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update database version'
+      setError(errorMessage)
       throw err
     }
-  }, [autoValidate, updateRegistryState, validateStartup])
+  }, [updateRegistryState, validateStartup])
 
   // Snapshot functions
   const createSnapshot = useCallback((environment: string, notes?: string): VersionSnapshot => {
     try {
       setError(null)
-      const snapshot = versionRegistry.createSnapshot(environment, notes)
+      const snapshot = versionRegistryRef.current.createSnapshot(environment, notes)
       updateRegistryState()
       return snapshot
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create snapshot')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create snapshot'
+      setError(errorMessage)
       throw err
     }
   }, [updateRegistryState])
@@ -191,68 +243,88 @@ export function useVersionRegistry(options: UseVersionRegistryOptions = {}): Use
   const exportRegistry = useCallback((): string => {
     try {
       setError(null)
-      return versionRegistry.exportRegistry()
+      return versionRegistryRef.current.exportRegistry()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to export registry')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to export registry'
+      setError(errorMessage)
       throw err
     }
   }, [])
 
-  const importRegistry = useCallback((data: string) => {
+  const importRegistry = useCallback((data: string): void => {
     try {
       setError(null)
-      versionRegistry.importRegistry(data)
+      versionRegistryRef.current.importRegistry(data)
       updateRegistryState()
-      
-      if (autoValidate) {
-        validateStartup()
-      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import registry')
-      throw err
-    }
-  }, [autoValidate, updateRegistryState, validateStartup])
-
-  const clearRegistry = useCallback(() => {
-    try {
-      setError(null)
-      versionRegistry.clearAll()
-      updateRegistryState()
-      setStartupValidation(null)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear registry')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to import registry'
+      setError(errorMessage)
       throw err
     }
   }, [updateRegistryState])
 
-  // Query functions
-  const getComponentById = useCallback((id: string) => {
-    return versionRegistry.getComponentById(id)
-  }, [])
-
-  const getCompatibilityMatrix = useCallback(() => {
-    return versionRegistry.getCompatibilityMatrix()
-  }, [])
-
-  // Migration functions
-  const addMigrationRecord = useCallback((dbId: string, migration: any) => {
+  const clearRegistry = useCallback((): void => {
     try {
       setError(null)
-      versionRegistry.addMigrationRecord(dbId, migration)
+      versionRegistryRef.current.clearRegistry()
       updateRegistryState()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add migration record')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to clear registry'
+      setError(errorMessage)
       throw err
     }
   }, [updateRegistryState])
 
-  const updateMigrationStatus = useCallback((dbId: string, migrationId: string, status: any) => {
+  // Query methods
+  const getComponentById = useCallback((id: string): PageVersion | DatabaseVersion | APIVersion | null => {
+    try {
+      return versionRegistryRef.current.getComponentById(id)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get component'
+      setError(errorMessage)
+      return null
+    }
+  }, [])
+
+  const getCompatibilityMatrix = useCallback((): CompatibilityMatrix => {
+    try {
+      return versionRegistryRef.current.getCompatibilityMatrix()
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get compatibility matrix'
+      setError(errorMessage)
+      throw err
+    }
+  }, [])
+
+  // Migration management
+  const addMigrationRecord = useCallback((migration: {
+    fromVersion: string
+    toVersion: string
+    componentId: string
+    componentType: 'page' | 'database' | 'api'
+    timestamp: Date
+    status: 'pending' | 'in-progress' | 'completed' | 'failed'
+    notes?: string
+  }): void => {
     try {
       setError(null)
-      versionRegistry.updateMigrationStatus(dbId, migrationId, status)
+      versionRegistryRef.current.addMigrationRecord(migration)
       updateRegistryState()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update migration status')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add migration record'
+      setError(errorMessage)
+      throw err
+    }
+  }, [updateRegistryState])
+
+  const updateMigrationStatus = useCallback((migrationId: string, status: 'pending' | 'in-progress' | 'completed' | 'failed', notes?: string): void => {
+    try {
+      setError(null)
+      versionRegistryRef.current.updateMigrationStatus(migrationId, status, notes)
+      updateRegistryState()
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update migration status'
+      setError(errorMessage)
       throw err
     }
   }, [updateRegistryState])
@@ -264,12 +336,28 @@ export function useVersionRegistry(options: UseVersionRegistryOptions = {}): Use
 
   // Initialize on mount
   useEffect(() => {
-    updateRegistryState()
-    
-    if (validateOnMount) {
-      validateStartup()
+    // Use refs to avoid dependency issues
+    const registry = versionRegistryRef.current
+    try {
+      setActivePages(registry.getActivePages())
+      setActiveDatabases(registry.getActiveDatabases())
+      setActiveAPIs(registry.getActiveAPIs())
+      setDeprecatedComponents(registry.getDeprecatedComponents())
+      setRecentSnapshots(registry.getRecentSnapshots())
+      setRegistryStats(registry.getRegistryStats())
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown registry error'
+      logRegistryError(errorMessage, 'initialize', 'getRegistryStats')
+      console.error('Error initializing registry state:', error)
     }
-  }, [updateRegistryState, validateOnMount, validateStartup])
+    
+    if (validateOnMountRef.current) {
+      // Run validation without triggering state updates that could cause loops
+      setTimeout(() => {
+        validateStartup()
+      }, 0)
+    }
+  }, []) // Empty dependency array to run only once on mount
 
   return {
     // Registry state
