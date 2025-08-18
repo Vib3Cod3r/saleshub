@@ -1,0 +1,22 @@
+# Files and directories to protect from AI modifications
+# Add files you want to lock here
+
+# Protected components (only modify if explicitly requested)
+frontend/src/app/deals/page.tsx
+# frontend/src/app/contacts/page.tsx - TEMPORARILY UNLOCKED FOR PAGINATION UPDATE
+frontend/src/app/companies/page.tsx
+
+# Protected layout components
+# frontend/src/components/layout/header.tsx - TEMPORARILY UNLOCKED FOR PLACEHOLDER CREATION
+# frontend/src/components/layout/sidebar.tsx - TEMPORARILY UNLOCKED FOR PLACEHOLDER CREATION
+
+# Protected hooks
+frontend/src/hooks/use-auth.tsx
+
+# Protected API utilities
+frontend/src/lib/api.ts
+
+# Add more protected files as needed
+# Example patterns:
+# frontend/src/components/protected-component.tsx
+# backend/src/handlers/protected-handler.go
