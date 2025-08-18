@@ -98,52 +98,61 @@ if (typeof window !== 'undefined') {
   errorLogger.loadPersistedLogs()
 }
 
-// Patch console.error to capture errors
-if (typeof window !== 'undefined') {
-  const originalConsoleError = console.error
-  console.error = (...args: unknown[]) => {
-    // Call the original console.error
-    originalConsoleError.apply(console, args)
-    
-    // Log to our error logger
-    const message = args.map(arg => 
-      typeof arg === 'string' ? arg : 
-      arg instanceof Error ? arg.message : 
-      JSON.stringify(arg)
-    ).join(' ')
-    
-    errorLogger.log('console', message, {
-      originalArgs: args,
-      stack: args.find(arg => arg instanceof Error)?.stack
-    })
-  }
-}
+// Patch console.error to capture errors (disabled to prevent conflicts)
+// if (typeof window !== 'undefined') {
+//   const originalConsoleError = console.error
+//   console.error = (...args: unknown[]) => {
+//     try {
+//       // Call the original console.error safely
+//       if (typeof originalConsoleError === 'function') {
+//         originalConsoleError.apply(console, args)
+//       }
+//       
+//       // Log to our error logger
+//       const message = args.map(arg => 
+//         typeof arg === 'string' ? arg : 
+//         arg instanceof Error ? arg.message : 
+//         JSON.stringify(arg)
+//       ).join(' ')
+//       
+//       errorLogger.log('console', message, {
+//         originalArgs: args,
+//         stack: args.find(arg => arg instanceof Error)?.stack
+//       })
+//     } catch (e) {
+//       // If our error logging fails, don't break the original console.error
+//       if (typeof originalConsoleError === 'function') {
+//         originalConsoleError.apply(console, args)
+//       }
+//     }
+//   }
+// }
 
-// Patch fetch to capture network errors
-if (typeof window !== 'undefined') {
-  const originalFetch = window.fetch
-  window.fetch = async (...args) => {
-    try {
-      const response = await originalFetch(...args)
-      
-      // Log failed requests
-      if (!response.ok) {
-        errorLogger.log('network', `HTTP ${response.status}: ${response.statusText}`, {
-          url: args[0],
-          status: response.status,
-          statusText: response.statusText
-        })
-      }
-      
-      return response
-    } catch (error) {
-      errorLogger.log('network', `Fetch error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
-        url: args[0],
-        error: error instanceof Error ? error.message : error
-      })
-      throw error
-    }
-  }
-}
+// Patch fetch to capture network errors (disabled to prevent conflicts)
+// if (typeof window !== 'undefined') {
+//   const originalFetch = window.fetch
+//   window.fetch = async (...args) => {
+//     try {
+//       const response = await originalFetch(...args)
+//       
+//       // Log failed requests
+//       if (!response.ok) {
+//         errorLogger.log('network', `HTTP ${response.status}: ${response.statusText}`, {
+//           url: args[0],
+//           status: response.status,
+//           statusText: response.statusText
+//         })
+//       }
+//       
+//       return response
+//     } catch (error) {
+//       errorLogger.log('network', `Fetch error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+//         url: args[0],
+//         error: error instanceof Error ? error.message : error
+//       })
+//       throw error
+//     }
+//   }
+// }
 
 export default errorLogger

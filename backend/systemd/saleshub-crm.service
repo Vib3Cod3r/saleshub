@@ -1,0 +1,50 @@
+[Unit]
+Description=SalesHub CRM API Server
+Documentation=https://github.com/your-org/saleshub
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=saleshub
+Group=saleshub
+WorkingDirectory=/opt/saleshub/backend
+ExecStart=/opt/saleshub/backend/scripts/server-manager.sh start
+ExecStop=/opt/saleshub/backend/scripts/server-manager.sh stop
+ExecReload=/opt/saleshub/backend/scripts/server-manager.sh restart
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Environment variables
+Environment=ENV=production
+Environment=PORT=8089
+Environment=DB_HOST=localhost
+Environment=DB_PORT=5432
+Environment=DB_NAME=sales_crm
+Environment=DB_USER=postgres
+Environment=DB_PASSWORD=Miyako2020
+Environment=JWT_SECRET=your-super-secret-jwt-key-here
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=saleshub-crm
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/saleshub/backend/logs /opt/saleshub/backend/data
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Health check
+ExecStartPre=/opt/saleshub/backend/scripts/health-check.sh
+
+[Install]
+WantedBy=multi-user.target

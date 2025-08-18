@@ -14,7 +14,7 @@ func GetLeadStatuses(c *gin.Context) {
 	var statuses []models.LeadStatus
 	tenantID := c.GetString("tenantID")
 
-	if err := config.DB.Where("tenant_id = ?", tenantID).Order("order").Find(&statuses).Error; err != nil {
+	if err := config.DB.Where("tenant_id = ?", tenantID).Order("\"order\"").Find(&statuses).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch lead statuses"})
 		return
 	}
@@ -27,7 +27,7 @@ func GetLeadTemperatures(c *gin.Context) {
 	var temperatures []models.LeadTemperature
 	tenantID := c.GetString("tenantID")
 
-	if err := config.DB.Where("tenant_id = ?", tenantID).Order("order").Find(&temperatures).Error; err != nil {
+	if err := config.DB.Where("tenant_id = ?", tenantID).Order("\"order\"").Find(&temperatures).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch lead temperatures"})
 		return
 	}

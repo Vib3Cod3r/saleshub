@@ -461,29 +461,42 @@ func CreateContact(c *gin.Context) {
 			log.Printf("[DB-ERROR] Failed to find lead status '%s' for tenant %s: %v", *req.LeadStatus, tenantID, err)
 			// Continue without creating lead if status not found
 		} else {
-			// Create a lead associated with this contact
-			lead := models.Lead{
-				FirstName: &contact.FirstName,
-				LastName:  &contact.LastName,
-				Title:     contact.Title,
-				StatusID:  leadStatus.ID,
-				ContactID: contactID,
-				CompanyID: func() string {
-					if contact.CompanyID != nil {
-						return *contact.CompanyID
-					}
-					return ""
-				}(),
-				AssignedUserID: userID,
-				TenantID:       tenantID,
-				CreatedBy:      &userID,
+			// Determine company ID for the lead
+			var companyID string
+			if contact.CompanyID != nil && *contact.CompanyID != "" {
+				companyID = *contact.CompanyID
+			} else {
+				// Get the first available company as default
+				var defaultCompany models.Company
+				if err := config.DB.Where("tenant_id = ?", tenantID).First(&defaultCompany).Error; err != nil {
+					log.Printf("[DB-ERROR] Failed to find default company for tenant %s: %v", tenantID, err)
+					// Continue without creating lead if no company found
+				} else {
+					companyID = defaultCompany.ID
+				}
 			}
 
-			if err := config.DB.Create(&lead).Error; err != nil {
-				log.Printf("[DB-ERROR] Failed to create lead for contact %s: %v", contactID, err)
-				// Continue without failing the contact creation
-			} else {
-				log.Printf("[DB-INFO] Created lead with status '%s' for contact %s", *req.LeadStatus, contactID)
+			// Only create lead if we have a valid company ID
+			if companyID != "" {
+				// Create a lead associated with this contact
+				lead := models.Lead{
+					FirstName:      &contact.FirstName,
+					LastName:       &contact.LastName,
+					Title:          contact.Title,
+					StatusID:       leadStatus.ID,
+					ContactID:      contactID,
+					CompanyID:      companyID,
+					AssignedUserID: userID,
+					TenantID:       tenantID,
+					CreatedBy:      &userID,
+				}
+
+				if err := config.DB.Create(&lead).Error; err != nil {
+					log.Printf("[DB-ERROR] Failed to create lead for contact %s: %v", contactID, err)
+					// Continue without failing the contact creation
+				} else {
+					log.Printf("[DB-INFO] Created lead with status '%s' for contact %s", *req.LeadStatus, contactID)
+				}
 			}
 		}
 	}

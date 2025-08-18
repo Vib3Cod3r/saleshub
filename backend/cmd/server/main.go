@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -14,10 +19,35 @@ import (
 )
 
 func main() {
+	startTime := time.Now()
+	
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using default values")
 	}
+
+	// Setup lifecycle logging
+	lifecycleConfig := config.DefaultLifecycleLogConfig()
+	if err := config.SetupLifecycleLogging(lifecycleConfig); err != nil {
+		log.Fatal("Failed to setup lifecycle logging:", err)
+	}
+
+	// Get environment and port
+	env := os.Getenv("ENV")
+	if env == "" {
+		env = "development"
+	}
+	
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8089"
+	}
+
+	// Log server start
+	config.LogServerStart(port, env, map[string]interface{}{
+		"version": "1.0.0",
+		"gin_mode": env,
+	})
 
 	// Initialize database
 	config.InitDatabase()
@@ -29,7 +59,7 @@ func main() {
 	config.SetupAPILogging(apiLogConfig)
 
 	// Set Gin mode
-	if os.Getenv("ENV") == "production" {
+	if env == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
@@ -50,9 +80,13 @@ func main() {
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
+		start := time.Now()
 		c.JSON(200, gin.H{
 			"status":  "ok",
 			"message": "SalesHub CRM API is running",
+		})
+		config.LogHealthCheck("healthy", time.Since(start), map[string]interface{}{
+			"endpoint": "/health",
 		})
 	})
 
@@ -199,14 +233,52 @@ func main() {
 		}
 	}
 
-	// Get port from environment or use default
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8089"
+	// Log server started successfully
+	config.LogServerStarted(port, time.Since(startTime))
+
+	// Setup graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Create server
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
 	}
 
-	log.Printf("Starting SalesHub CRM API server on port %s", port)
-	if err := r.Run(":" + port); err != nil {
-		log.Fatal("Failed to start server:", err)
+	// Start server in a goroutine
+	go func() {
+		log.Printf("Starting SalesHub CRM API server on port %s", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			config.LogApplicationError("server", "listen_and_serve", err, map[string]interface{}{
+				"port": port,
+			})
+			log.Fatal("Failed to start server:", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	// Log shutdown
+	uptime := time.Since(startTime)
+	config.LogServerShutdown("graceful_shutdown", uptime)
+
+	// Graceful shutdown
+	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		config.LogApplicationError("server", "shutdown", err, map[string]interface{}{
+			"timeout": "30s",
+		})
+		log.Fatal("Server forced to shutdown:", err)
 	}
+
+	// Close lifecycle logging
+	config.CloseLifecycleLogging()
+
+	log.Println("Server exited")
 }

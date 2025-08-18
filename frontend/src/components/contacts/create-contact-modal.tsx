@@ -17,6 +17,50 @@ interface User {
   }
 }
 
+interface LeadStatus {
+  id: string
+  name: string
+  code: string
+  description?: string
+  color?: string
+  order: number
+  isActive: boolean
+  isSystem: boolean
+}
+
+interface EmailAddressType {
+  id: string
+  name: string
+  code: string
+  description?: string
+  isActive: boolean
+}
+
+interface PhoneNumberType {
+  id: string
+  name: string
+  code: string
+  description?: string
+  isActive: boolean
+}
+
+interface AddressType {
+  id: string
+  name: string
+  code: string
+  description?: string
+  isActive: boolean
+}
+
+interface SocialMediaType {
+  id: string
+  name: string
+  code: string
+  icon?: string
+  baseUrl?: string
+  isActive: boolean
+}
+
 interface CreateContactModalProps {
   isOpen: boolean
   onClose: () => void
@@ -118,6 +162,11 @@ const apiClient = {
 export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContactModalProps) {
   const { user } = useAuth()
   const [users, setUsers] = useState<User[]>([])
+  const [leadStatuses, setLeadStatuses] = useState<LeadStatus[]>([])
+  const [emailAddressTypes, setEmailAddressTypes] = useState<EmailAddressType[]>([])
+  const [phoneNumberTypes, setPhoneNumberTypes] = useState<PhoneNumberType[]>([])
+  const [addressTypes, setAddressTypes] = useState<AddressType[]>([])
+  const [socialMediaTypes, setSocialMediaTypes] = useState<SocialMediaType[]>([])
   const [formData, setFormData] = useState<ContactFormData>({
     firstName: '',
     lastName: '',
@@ -176,10 +225,134 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     }
   }
 
-  // Fetch users when modal opens
+  // Fetch lead statuses for dropdown
+  const fetchLeadStatuses = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No authentication token found when fetching lead statuses')
+        return
+      }
+
+      console.log('Fetching lead statuses with token:', token.substring(0, 20) + '...')
+
+      const response = await fetch('http://localhost:8089/api/lookups/lead-statuses', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('Lead statuses API response status:', response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Lead statuses fetched successfully:', data.length || 0, 'statuses')
+        setLeadStatuses(data || [])
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to fetch lead statuses:', response.status, errorData)
+      }
+    } catch (error) {
+      console.error('Failed to fetch lead statuses:', error)
+    }
+  }
+
+  // Fetch email address types for dropdown
+  const fetchEmailAddressTypes = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No authentication token found when fetching email address types')
+        return
+      }
+
+      const response = await fetch('http://localhost:8089/api/lookups/email-address-types', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Email address types fetched successfully:', data.length || 0, 'types')
+        setEmailAddressTypes(data || [])
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to fetch email address types:', response.status, errorData)
+      }
+    } catch (error) {
+      console.error('Failed to fetch email address types:', error)
+    }
+  }
+
+  // Fetch phone number types for dropdown
+  const fetchPhoneNumberTypes = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No authentication token found when fetching phone number types')
+        return
+      }
+
+      const response = await fetch('http://localhost:8089/api/lookups/phone-number-types', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Phone number types fetched successfully:', data.length || 0, 'types')
+        setPhoneNumberTypes(data || [])
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to fetch phone number types:', response.status, errorData)
+      }
+    } catch (error) {
+      console.error('Failed to fetch phone number types:', error)
+    }
+  }
+
+  // Fetch address types for dropdown
+  const fetchAddressTypes = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No authentication token found when fetching address types')
+        return
+      }
+
+      const response = await fetch('http://localhost:8089/api/lookups/address-types', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Address types fetched successfully:', data.length || 0, 'types')
+        setAddressTypes(data || [])
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to fetch address types:', response.status, errorData)
+      }
+    } catch (error) {
+      console.error('Failed to fetch address types:', error)
+    }
+  }
+
+  // Fetch all lookup data when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchUsers()
+      fetchLeadStatuses()
+      fetchEmailAddressTypes()
+      fetchPhoneNumberTypes()
+      fetchAddressTypes()
       // Don't set default owner - let user choose or leave as null
     }
   }, [isOpen])
@@ -397,40 +570,76 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
           <form onSubmit={handleSubmit} className="p-6 max-h-[70vh] overflow-y-auto">
             <div className="space-y-6">
               {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Email
                 </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={formData.emailAddresses[0]?.email || ''}
-                  onChange={(e) => handleArrayChange('emailAddresses', 0, 'email', e.target.value)}
-                  className={cn(
-                    "w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
-                    errors.email ? "border-red-300" : "border-gray-300"
-                  )}
-                />
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <input
+                      type="email"
+                      id="email"
+                      value={formData.emailAddresses[0]?.email || ''}
+                      onChange={(e) => handleArrayChange('emailAddresses', 0, 'email', e.target.value)}
+                      className={cn(
+                        "w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+                        errors.email ? "border-red-300" : "border-gray-300"
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={formData.emailAddresses[0]?.typeId || ''}
+                      onChange={(e) => handleArrayChange('emailAddresses', 0, 'typeId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    >
+                      <option value="">Type</option>
+                      {emailAddressTypes.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 {errors.email && (
                   <p className="mt-1 text-sm text-red-600">{errors.email}</p>
                 )}
               </div>
 
               {/* Phone Number */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <div className="space-y-2">
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   Phone number
                 </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={formData.phoneNumbers[0]?.number || ''}
-                  onChange={(e) => handleArrayChange('phoneNumbers', 0, 'number', e.target.value)}
-                  className={cn(
-                    "w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
-                    errors.phone ? "border-red-300" : "border-gray-300"
-                  )}
-                />
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2">
+                    <input
+                      type="tel"
+                      id="phone"
+                      value={formData.phoneNumbers[0]?.number || ''}
+                      onChange={(e) => handleArrayChange('phoneNumbers', 0, 'number', e.target.value)}
+                      className={cn(
+                        "w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500",
+                        errors.phone ? "border-red-300" : "border-gray-300"
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={formData.phoneNumbers[0]?.typeId || ''}
+                      onChange={(e) => handleArrayChange('phoneNumbers', 0, 'typeId', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+                    >
+                      <option value="">Type</option>
+                      {phoneNumberTypes.map((type) => (
+                        <option key={type.id} value={type.id}>
+                          {type.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
                 {errors.phone && (
                   <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
                 )}
@@ -525,21 +734,18 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                 />
               </div>
 
-              {/* Lifecycle Stage */}
+              {/* Department */}
               <div>
-                <label htmlFor="lifecycleStage" className="block text-sm font-medium text-gray-700 mb-2">
-                  Lifecycle stage
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
+                  Department
                 </label>
-                <select
-                  id="lifecycleStage"
+                <input
+                  type="text"
+                  id="department"
+                  value={formData.department || ''}
+                  onChange={(e) => handleInputChange('department', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                >
-                  <option value="">Select lifecycle stage</option>
-                  <option value="lead">Lead</option>
-                  <option value="contact">Contact</option>
-                  <option value="customer">Customer</option>
-                  <option value="prospect">Prospect</option>
-                </select>
+                />
               </div>
 
               {/* Lead Status */}
@@ -554,10 +760,11 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                   className="w-full px-3 py-2 border border-teal-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-teal-50"
                 >
                   <option value="">Select lead status</option>
-                  <option value="New">New</option>
-                  <option value="Contacted">Contacted</option>
-                  <option value="Qualified">Qualified</option>
-                  <option value="Unqualified">Unqualified</option>
+                  {leadStatuses.map((status) => (
+                    <option key={status.id} value={status.code}>
+                      {status.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -640,4 +847,3 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     </Dialog>
   )
 }
-``

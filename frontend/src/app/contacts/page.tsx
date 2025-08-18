@@ -44,7 +44,6 @@ interface ContactsResponse {
 
 export default function ContactsPage() {
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [allContacts, setAllContacts] = useState<Contact[]>([])
@@ -63,17 +62,11 @@ export default function ContactsPage() {
   })
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
 
-  // We no longer need to fetch contacts on page change since we're using allContacts
-  // useEffect(() => {
-  //   fetchContacts()
-  // }, [pagination.page])
-
   // Fetch all contacts for search functionality
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true)
       await fetchAllContacts()
-      await fetchContacts() // Still fetch initial page data for pagination info
       setLoading(false)
     }
     loadInitialData()
@@ -84,50 +77,22 @@ export default function ContactsPage() {
     setPagination(prev => ({ ...prev, page: 1 }))
   }, [searchQuery])
 
-  const fetchContacts = async () => {
-    try {
-      setLoading(true)
-      const token = localStorage.getItem('token')
-      
-      if (!token) {
-        setError('No authentication token found')
-        setLoading(false)
-        return
-      }
-
-      const response = await fetch(`http://localhost:8089/api/crm/contacts?page=${pagination.page}&limit=${pagination.limit}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch contacts: ${response.status}`)
-      }
-
-      const data: ContactsResponse = await response.json()
-      console.log('Received contacts data:', data.data) // Debug log
-      setAllContacts(data.data) // Set the contacts data
-      setPagination(prev => ({
-        ...prev,
-        total: data.pagination.total,
-        totalPages: data.pagination.totalPages
-      }))
-      setError(null)
-    } catch (err) {
-      console.error('Error fetching contacts:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch contacts')
-    } finally {
-      setLoading(false)
+  // Ensure current page doesn't exceed total pages when data changes
+  useEffect(() => {
+    const paginationInfo = getPaginationInfo()
+    if (pagination.page > paginationInfo.totalPages && paginationInfo.totalPages > 0) {
+      setPagination(prev => ({ ...prev, page: paginationInfo.totalPages }))
     }
-  }
+  }, [allContacts, searchQuery])
+
+
 
   const fetchAllContacts = async () => {
     try {
       const token = localStorage.getItem('token')
       
       if (!token) {
+        console.error('No authentication token found')
         return
       }
 
@@ -279,6 +244,22 @@ export default function ContactsPage() {
     return sortedContacts.slice(startIndex, endIndex)
   }
 
+  // Calculate pagination info based on filtered contacts
+  const getPaginationInfo = () => {
+    const filteredContacts = getFilteredContacts()
+    const totalItems = filteredContacts.length
+    const totalPages = Math.ceil(totalItems / pagination.limit)
+    const currentPage = Math.min(pagination.page, totalPages || 1)
+    
+    return {
+      totalItems,
+      totalPages,
+      currentPage,
+      hasNextPage: currentPage < totalPages,
+      hasPrevPage: currentPage > 1
+    }
+  }
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '--'
     const date = new Date(dateString)
@@ -296,7 +277,6 @@ export default function ContactsPage() {
     setIsCreateModalOpen(false)
     // Refresh the contacts data
     fetchAllContacts()
-    fetchContacts()
   }
 
   if (loading) {
@@ -311,17 +291,7 @@ export default function ContactsPage() {
     )
   }
 
-  if (error) {
-    return (
-      <div className="bg-white">
-        <div className="w-full">
-          <div className="flex items-center justify-center py-8">
-            <div className="text-lg text-red-600">Error: {error}</div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+
 
   return (
     <div className="bg-white">
@@ -401,7 +371,12 @@ export default function ContactsPage() {
           {/* Right side - Records count and Actions */}
           <div className="flex items-center space-x-4">
             <span className="text-sm text-gray-500">
-              {getFilteredContacts().length} records
+              {(() => {
+                const paginationInfo = getPaginationInfo()
+                const startIndex = (paginationInfo.currentPage - 1) * pagination.limit + 1
+                const endIndex = Math.min(paginationInfo.currentPage * pagination.limit, paginationInfo.totalItems)
+                return `${startIndex}-${endIndex} of ${paginationInfo.totalItems} records`
+              })()}
             </span>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Export</button>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Edit columns</button>
@@ -410,7 +385,22 @@ export default function ContactsPage() {
 
         {/* Table */}
         <div className="w-full">
-          <table className="w-full table-fixed">
+          {getPaginatedContacts().length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-500 text-lg mb-2">
+                {searchQuery ? 'No contacts found matching your search' : 'No contacts found'}
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Clear search
+                </button>
+              )}
+            </div>
+          ) : (
+            <table className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="w-12 px-4 py-3 text-left">
@@ -622,108 +612,122 @@ export default function ContactsPage() {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">{formatDate(contact.updatedAt)}</td>
                   <td className="px-4 py-3">
-                    {(() => {
-                      console.log('Contact lead status:', contact.leadStatus, 'for contact:', contact.firstName, contact.lastName)
-                      return contact.leadStatus ? (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                          {contact.leadStatus}
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
-                          --
-                        </span>
-                      )
-                    })()}
+                    {contact.leadStatus ? (
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                        {contact.leadStatus}
+                      </span>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                        --
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          )}
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-center space-x-2 mt-6 pt-4 border-t border-gray-200">
-          {/* Previous Button */}
-          <button 
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            disabled={pagination.page === 1}
-            onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-          >
-            Previous
-          </button>
-          
-          {/* Page Numbers */}
-          <div className="flex items-center space-x-1">
-            {(() => {
-              const filteredContacts = getFilteredContacts()
-              const totalPages = Math.ceil(filteredContacts.length / pagination.limit)
-              const currentPage = pagination.page
-              const pages = []
-              
-              // If total pages is 10 or less, show all pages
-              if (totalPages <= 10) {
-                for (let i = 1; i <= totalPages; i++) {
-                  pages.push(i);
-                }
-              } else {
-                // For more than 10 pages, show smart pagination
-                if (currentPage <= 5) {
-                  // Show first 7 pages + ellipsis + last page
-                  for (let i = 1; i <= 7; i++) {
-                    pages.push(i);
-                  }
-                  pages.push('...');
-                  pages.push(totalPages);
-                } else if (currentPage >= totalPages - 4) {
-                  // Show first page + ellipsis + last 7 pages
-                  pages.push(1);
-                  pages.push('...');
-                  for (let i = totalPages - 6; i <= totalPages; i++) {
-                    pages.push(i);
-                  }
-                } else {
-                  // Show first page + ellipsis + current page and neighbors + ellipsis + last page
-                  pages.push(1);
-                  pages.push('...');
-                  for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                    pages.push(i);
-                  }
-                  pages.push('...');
-                  pages.push(totalPages);
-                }
-              }
-              
-              return pages.map((pageNum, index) => (
-                pageNum === '...' ? (
-                  <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-400">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={pageNum}
-                    className={`px-2 py-1 text-sm font-medium rounded ${
-                      pageNum === currentPage
-                        ? 'text-black font-semibold' // Current page - black and bold
-                        : 'text-blue-600 hover:text-blue-800' // Other pages - blue
-                    }`}
-                    onClick={() => setPagination(prev => ({ ...prev, page: pageNum as number }))}
-                  >
-                    {pageNum}
-                  </button>
-                )
-              ));
-            })()}
+        {getPaginatedContacts().length > 0 && (
+          <div className="flex items-center justify-center space-x-2 mt-12 pt-6">
+          {(() => {
+            const paginationInfo = getPaginationInfo()
+            
+            return (
+              <>
+                {/* Previous Button */}
+                <button 
+                  className={`text-sm font-medium ${
+                    paginationInfo.hasPrevPage 
+                      ? 'text-blue-600 hover:text-blue-800' 
+                      : 'text-gray-400 cursor-not-allowed'
+                  }`}
+                  disabled={!paginationInfo.hasPrevPage}
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+                >
+                  Previous
+                </button>
+                
+                {/* Page Numbers */}
+                <div className="flex items-center space-x-1">
+                  {(() => {
+                    const { totalPages, currentPage } = paginationInfo
+                    const pages = []
+                    
+                    // If total pages is 10 or less, show all pages
+                    if (totalPages <= 10) {
+                      for (let i = 1; i <= totalPages; i++) {
+                        pages.push(i);
+                      }
+                    } else {
+                      // For more than 10 pages, show smart pagination
+                      if (currentPage <= 5) {
+                        // Show first 7 pages + ellipsis + last page
+                        for (let i = 1; i <= 7; i++) {
+                          pages.push(i);
+                        }
+                        pages.push('...');
+                        pages.push(totalPages);
+                      } else if (currentPage >= totalPages - 4) {
+                        // Show first page + ellipsis + last 7 pages
+                        pages.push(1);
+                        pages.push('...');
+                        for (let i = totalPages - 6; i <= totalPages; i++) {
+                          pages.push(i);
+                        }
+                      } else {
+                        // Show first page + ellipsis + current page and neighbors + ellipsis + last page
+                        pages.push(1);
+                        pages.push('...');
+                        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                          pages.push(i);
+                        }
+                        pages.push('...');
+                        pages.push(totalPages);
+                      }
+                    }
+                    
+                    return pages.map((pageNum, index) => (
+                      pageNum === '...' ? (
+                        <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-400">
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={pageNum}
+                          className={`px-2 py-1 text-sm font-medium rounded ${
+                            pageNum === currentPage
+                              ? 'text-black font-semibold' // Current page - black and bold
+                              : 'text-blue-600 hover:text-blue-800' // Other pages - blue
+                          }`}
+                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum as number }))}
+                        >
+                          {pageNum}
+                        </button>
+                      )
+                    ));
+                  })()}
+                </div>
+                
+                {/* Next Button */}
+                <button 
+                  className={`text-sm font-medium ${
+                    paginationInfo.hasNextPage 
+                      ? 'text-blue-600 hover:text-blue-800' 
+                      : 'text-gray-400 cursor-not-allowed'
+                  }`}
+                  disabled={!paginationInfo.hasNextPage}
+                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+                >
+                  Next
+                </button>
+              </>
+            )
+          })()}
           </div>
-          
-          {/* Next Button */}
-          <button 
-            className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-            disabled={pagination.page >= Math.ceil(getFilteredContacts().length / pagination.limit)}
-            onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-          >
-            Next
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Create Contact Modal */}
