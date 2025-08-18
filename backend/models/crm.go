@@ -67,6 +67,10 @@ type Contact struct {
 	CompanyID *string  `json:"companyId" gorm:"type:uuid;default:null"`
 	Company   *Company `json:"company" gorm:"foreignKey:CompanyID;references:ID"`
 
+	// Contact owner relationship
+	OwnerID *string `json:"ownerId" gorm:"type:uuid;default:null"`
+	Owner   *User   `json:"owner" gorm:"foreignKey:OwnerID;references:ID"`
+
 	// Lead source tracking
 	OriginalSource *string `json:"originalSource"`
 

@@ -1,11 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Dialog } from '@headlessui/react'
 import { XMarkIcon, ArrowTopRightOnSquareIcon } from '@heroicons/react/24/outline'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/use-auth-provider'
+
+interface User {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role?: {
+    name: string
+  }
+}
 
 interface CreateContactModalProps {
   isOpen: boolean
@@ -20,6 +30,8 @@ interface ContactFormData {
   department?: string
   companyId?: string
   companyName?: string
+  ownerId?: string
+  leadStatus?: string
   emailAddresses: Array<{
     email: string
     isPrimary: boolean
@@ -105,6 +117,7 @@ const apiClient = {
 
 export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContactModalProps) {
   const { user } = useAuth()
+  const [users, setUsers] = useState<User[]>([])
   const [formData, setFormData] = useState<ContactFormData>({
     firstName: '',
     lastName: '',
@@ -112,6 +125,8 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     department: '',
     companyId: '',
     companyName: '',
+    ownerId: '', // Start with no owner selected
+    leadStatus: '', // Start with no lead status selected
     emailAddresses: [{ email: '', isPrimary: true }],
     phoneNumbers: [{ number: '', isPrimary: true }],
     addresses: [{ isPrimary: true }],
@@ -128,6 +143,47 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
 
   const queryClient = useQueryClient()
 
+  // Fetch users for contact owner dropdown
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('No authentication token found when fetching users')
+        return
+      }
+
+      console.log('Fetching users with token:', token.substring(0, 20) + '...')
+
+      const response = await fetch('http://localhost:8089/api/crm/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      console.log('Users API response status:', response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Users fetched successfully:', data.data?.length || 0, 'users')
+        setUsers(data.data || [])
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to fetch users:', response.status, errorData)
+      }
+    } catch (error) {
+      console.error('Failed to fetch users:', error)
+    }
+  }
+
+  // Fetch users when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers()
+      // Don't set default owner - let user choose or leave as null
+    }
+  }, [isOpen])
+
   const createContactMutation = useMutation({
     mutationFn: apiClient.createContact,
     onSuccess: () => {
@@ -141,6 +197,8 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
           department: '',
           companyId: '',
           companyName: '',
+          ownerId: '', // Reset to no owner
+          leadStatus: '', // Reset to no lead status
           emailAddresses: [{ email: '', isPrimary: true }],
           phoneNumbers: [{ number: '', isPrimary: true }],
           addresses: [{ isPrimary: true }],
@@ -256,6 +314,8 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
         department: formData.department || undefined,
         companyId: formData.companyId || undefined,
         companyName: formData.companyName || undefined,
+        ownerId: formData.ownerId || undefined, // No default owner - let it be null if not selected
+        leadStatus: formData.leadStatus || undefined, // Include lead status
         originalSource: formData.originalSource || undefined,
         emailOptIn: formData.emailOptIn,
         smsOptIn: formData.smsOptIn,
@@ -266,6 +326,11 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
         addresses: formData.addresses.filter(a => a.street1?.trim() || a.city?.trim()),
         socialMedia: formData.socialMedia.filter(s => s.username?.trim() || s.url?.trim())
       }
+
+      console.log('Creating contact with data:', {
+        ...contactData,
+        ownerId: contactData.ownerId || 'NOT SET'
+      })
 
       await createContactMutation.mutateAsync(contactData)
     } catch (error) {
@@ -418,10 +483,17 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                 </label>
                 <select
                   id="contactOwner"
+                  value={formData.ownerId || ''}
+                  onChange={(e) => handleInputChange('ownerId', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 >
-                  <option value="">Select contact owner</option>
-                  <option value="theodore-tse">Theodore Tse</option>
+                  <option value="">Select contact owner (optional)</option>
+                  {users.map((userOption) => (
+                    <option key={userOption.id} value={userOption.id}>
+                      {userOption.firstName} {userOption.lastName} ({userOption.email})
+                      {userOption.id === user?.id ? ' (You)' : ''}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -477,13 +549,15 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
                 </label>
                 <select
                   id="leadStatus"
+                  value={formData.leadStatus}
+                  onChange={(e) => handleInputChange('leadStatus', e.target.value)}
                   className="w-full px-3 py-2 border border-teal-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-teal-50"
                 >
                   <option value="">Select lead status</option>
-                  <option value="new">New</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="qualified">Qualified</option>
-                  <option value="unqualified">Unqualified</option>
+                  <option value="New">New</option>
+                  <option value="Contacted">Contacted</option>
+                  <option value="Qualified">Qualified</option>
+                  <option value="Unqualified">Unqualified</option>
                 </select>
               </div>
 
@@ -566,3 +640,4 @@ export function CreateContactModal({ isOpen, onClose, onSuccess }: CreateContact
     </Dialog>
   )
 }
+``

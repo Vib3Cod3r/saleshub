@@ -27,6 +27,7 @@ type ContactResponse struct {
 	Deals          []models.Deal               `json:"deals"`
 	Leads          []models.Lead               `json:"leads"`
 	Communications []models.Communication      `json:"communications"`
+	LeadStatus     *string                     `json:"leadStatus,omitempty"`
 }
 
 // GetContacts returns a list of contacts with pagination and search
@@ -65,8 +66,10 @@ func GetContacts(c *gin.Context) {
 
 	// Preload relationships
 	query = query.Preload("Company").
+		Preload("Owner").
 		Preload("PhoneNumbers").
-		Preload("EmailAddresses")
+		Preload("EmailAddresses").
+		Preload("Leads.Status")
 
 	// Get total count for pagination
 	var total int64
@@ -133,8 +136,49 @@ func GetContacts(c *gin.Context) {
 		})
 	}
 
+	// Transform contacts to include lead status
+	var contactResponses []gin.H
+	for _, contact := range contacts {
+		contactData := gin.H{
+			"id":             contact.ID,
+			"firstName":      contact.FirstName,
+			"lastName":       contact.LastName,
+			"title":          contact.Title,
+			"department":     contact.Department,
+			"companyId":      contact.CompanyID,
+			"company":        contact.Company,
+			"ownerId":        contact.OwnerID,
+			"owner":          contact.Owner,
+			"originalSource": contact.OriginalSource,
+			"emailOptIn":     contact.EmailOptIn,
+			"smsOptIn":       contact.SMSOptIn,
+			"callOptIn":      contact.CallOptIn,
+			"tenantId":       contact.TenantID,
+			"createdAt":      contact.CreatedAt,
+			"updatedAt":      contact.UpdatedAt,
+			"createdBy":      contact.CreatedBy,
+			"phoneNumbers":   contact.PhoneNumbers,
+			"emailAddresses": contact.EmailAddresses,
+		}
+
+		// Get lead status from associated leads
+		var leadStatus *string
+		if len(contact.Leads) > 0 {
+			// Use the first lead's status
+			for _, lead := range contact.Leads {
+				if lead.Status != nil {
+					leadStatus = &lead.Status.Name
+					break
+				}
+			}
+		}
+		contactData["leadStatus"] = leadStatus
+
+		contactResponses = append(contactResponses, contactData)
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"data": contacts,
+		"data": contactResponses,
 		"pagination": gin.H{
 			"page":       page,
 			"limit":      limit,
@@ -182,10 +226,12 @@ type CreateContactRequest struct {
 	Department     *string                     `json:"department"`
 	CompanyID      *string                     `json:"companyId,omitempty"`
 	CompanyName    *string                     `json:"companyName"`
+	OwnerID        *string                     `json:"ownerId,omitempty"`
 	OriginalSource *string                     `json:"originalSource"`
 	EmailOptIn     bool                        `json:"emailOptIn"`
 	SMSOptIn       bool                        `json:"smsOptIn"`
 	CallOptIn      bool                        `json:"callOptIn"`
+	LeadStatus     *string                     `json:"leadStatus,omitempty"`
 	EmailAddresses []models.EmailAddress       `json:"emailAddresses"`
 	PhoneNumbers   []models.PhoneNumber        `json:"phoneNumbers"`
 	Addresses      []models.Address            `json:"addresses"`
@@ -220,6 +266,13 @@ func CreateContact(c *gin.Context) {
 		}
 	}
 
+	// Handle empty string for ownerId
+	if ownerID, exists := rawData["ownerId"]; exists {
+		if ownerIDStr, ok := ownerID.(string); ok && ownerIDStr == "" {
+			delete(rawData, "ownerId")
+		}
+	}
+
 	// Convert back to JSON and bind to struct
 	jsonData, _ := json.Marshal(rawData)
 	var req CreateContactRequest
@@ -250,6 +303,14 @@ func CreateContact(c *gin.Context) {
 		contact.CompanyID = nil
 	}
 
+	// Set OwnerID if provided and not empty
+	if req.OwnerID != nil && *req.OwnerID != "" {
+		contact.OwnerID = req.OwnerID
+	} else {
+		// Explicitly set to nil to avoid empty string
+		contact.OwnerID = nil
+	}
+
 	// Validate company exists if provided
 	if contact.CompanyID != nil && *contact.CompanyID != "" {
 		var company models.Company
@@ -271,9 +332,9 @@ func CreateContact(c *gin.Context) {
 	query := `
 		INSERT INTO contacts (
 			first_name, last_name, title, department, 
-			company_id, original_source, email_opt_in, 
+			company_id, owner_id, original_source, email_opt_in, 
 			sms_opt_in, call_opt_in, tenant_id, created_by
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		RETURNING id
 	`
 
@@ -284,6 +345,7 @@ func CreateContact(c *gin.Context) {
 		contact.Title,
 		contact.Department,
 		contact.CompanyID, // This will be nil if not set
+		contact.OwnerID,   // This will be nil if not set
 		contact.OriginalSource,
 		contact.EmailOptIn,
 		contact.SMSOptIn,
@@ -388,6 +450,41 @@ func CreateContact(c *gin.Context) {
 			log.Printf("[DB-ERROR] Failed to create social media account: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create social media account"})
 			return
+		}
+	}
+
+	// Create lead if lead status is provided
+	if req.LeadStatus != nil && *req.LeadStatus != "" {
+		// Find the lead status by name
+		var leadStatus models.LeadStatus
+		if err := config.DB.Where("name = ? AND tenant_id = ?", *req.LeadStatus, tenantID).First(&leadStatus).Error; err != nil {
+			log.Printf("[DB-ERROR] Failed to find lead status '%s' for tenant %s: %v", *req.LeadStatus, tenantID, err)
+			// Continue without creating lead if status not found
+		} else {
+			// Create a lead associated with this contact
+			lead := models.Lead{
+				FirstName: &contact.FirstName,
+				LastName:  &contact.LastName,
+				Title:     contact.Title,
+				StatusID:  leadStatus.ID,
+				ContactID: contactID,
+				CompanyID: func() string {
+					if contact.CompanyID != nil {
+						return *contact.CompanyID
+					}
+					return ""
+				}(),
+				AssignedUserID: userID,
+				TenantID:       tenantID,
+				CreatedBy:      &userID,
+			}
+
+			if err := config.DB.Create(&lead).Error; err != nil {
+				log.Printf("[DB-ERROR] Failed to create lead for contact %s: %v", contactID, err)
+				// Continue without failing the contact creation
+			} else {
+				log.Printf("[DB-INFO] Created lead with status '%s' for contact %s", *req.LeadStatus, contactID)
+			}
 		}
 	}
 

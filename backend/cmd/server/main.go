@@ -82,6 +82,12 @@ func main() {
 			// CRM routes
 			crm := protected.Group("/crm")
 			{
+				// Users
+				users := crm.Group("/users")
+				{
+					users.GET("", handlers.GetUsers)
+				}
+
 				// Companies
 				companies := crm.Group("/companies")
 				{
