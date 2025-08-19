@@ -122,7 +122,7 @@ type Contact struct {
   - Heroicons ^2.2.0 for icons
   - Lucide React ^0.536.0 for additional icons
 - **State Management**: TanStack React Query ^5.84.1
-- **Development Port**: 3000
+- **Development Port**: 3000 (always use port 3000, never allow fallback to other ports)
 
 ### Frontend Modular Structure
 ```
@@ -337,6 +337,12 @@ describe('ContactCard', () => {
 5. Export types alongside components/functions
 
 ## Development Workflow
+
+### Port Configuration
+- **Frontend Development**: Always use port 3000 for Next.js development server
+- **Backend Development**: Always use port 8089 for Go/Gin server
+- **Database**: Always use port 5432 for PostgreSQL
+- **Never allow automatic port fallback** - if a port is in use, stop the conflicting process and use the designated port
 
 ### Module Development Checklist
 Before implementing any module, verify:

@@ -17,11 +17,34 @@ interface Company {
   id: string
   name: string
   domain?: string
-  industry?: string
-  size?: string
+  industry?: {
+    id: string
+    name: string
+    code?: string
+  } | null
+  size?: {
+    id: string
+    name: string
+    code?: string
+  } | null
   phone?: string
   email?: string
   status?: string
+  ownerContact?: {
+    id: string
+    firstName: string
+    lastName: string
+  } | null
+  assignedUser?: {
+    id: string
+    firstName: string
+    lastName: string
+  } | null
+  tenant?: {
+    id: string
+    name: string
+    code?: string
+  } | null
   createdAt: string
   updatedAt: string
   [key: string]: any // For custom fields
@@ -180,7 +203,7 @@ export default function CompaniesPage() {
     return companies.filter(company => {
       const name = company.name.toLowerCase()
       const domain = (company.domain || '').toLowerCase()
-      const industry = (company.industry || '').toLowerCase()
+      const industry = (company.industry?.name || '').toLowerCase()
       const phone = (company.phone || '').toLowerCase()
       const email = (company.email || '').toLowerCase()
       
@@ -210,12 +233,12 @@ export default function CompaniesPage() {
           bValue = (b.domain || '').toLowerCase()
           break
         case 'industry':
-          aValue = (a.industry || '').toLowerCase()
-          bValue = (b.industry || '').toLowerCase()
+          aValue = (a.industry?.name || '').toLowerCase()
+          bValue = (b.industry?.name || '').toLowerCase()
           break
         case 'size':
-          aValue = (a.size || '').toLowerCase()
-          bValue = (b.size || '').toLowerCase()
+          aValue = (a.size?.name || '').toLowerCase()
+          bValue = (b.size?.name || '').toLowerCase()
           break
         case 'contact':
           aValue = getCompanyContact(a).toLowerCase()
@@ -281,27 +304,26 @@ export default function CompaniesPage() {
     })
   }
 
-  // Column management functions
-  const handleColumnSort = (key: string, direction: 'asc' | 'desc') => {
-    setSortConfig({ key, direction })
-  }
+
 
   const handleMoveColumn = (columnId: string, direction: 'left' | 'right') => {
-    setColumns(prev => {
-      const currentIndex = prev.findIndex(col => col.id === columnId)
-      if (currentIndex === -1) return prev
+    setColumns(prevColumns => {
+      const currentIndex = prevColumns.findIndex(col => col.id === columnId)
+      if (currentIndex === -1) return prevColumns
 
-      const newColumns = [...prev]
+      const newColumns = [...prevColumns]
       const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1
 
       // Check bounds
-      if (targetIndex < 0 || targetIndex >= newColumns.length) return prev
+      if (targetIndex < 0 || targetIndex >= newColumns.length) return prevColumns
 
-      // Check if target column is locked
-      if (newColumns[targetIndex].locked) return prev
+      // Check if current column is locked (don't allow moving locked columns)
+      if (newColumns[currentIndex].locked) return prevColumns
 
       // Swap columns
-      [newColumns[currentIndex], newColumns[targetIndex]] = [newColumns[targetIndex], newColumns[currentIndex]]
+      const temp = newColumns[currentIndex]
+      newColumns[currentIndex] = newColumns[targetIndex]
+      newColumns[targetIndex] = temp
 
       return newColumns
     })
@@ -349,9 +371,9 @@ export default function CompaniesPage() {
       case 'domain':
         return company.domain || '--'
       case 'industry':
-        return company.industry || '--'
+        return company.industry?.name || '--'
       case 'size':
-        return company.size || '--'
+        return company.size?.name || '--'
       case 'contact':
         return getCompanyContact(company)
       case 'status':
@@ -362,7 +384,24 @@ export default function CompaniesPage() {
       case 'createdAt':
         return formatDate(company.createdAt)
       default:
-        return company[columnKey] || '--'
+        // Handle nested objects and arrays safely
+        const value = company[columnKey]
+        if (value === null || value === undefined) {
+          return '--'
+        }
+        if (typeof value === 'object') {
+          // For nested objects, try to extract a meaningful string representation
+          if (Array.isArray(value)) {
+            return value.length > 0 ? `${value.length} items` : '--'
+          }
+          // For objects, try to get a name or id property
+          if (value.name) return value.name
+          if (value.id) return value.id
+          if (value.code) return value.code
+          // Fallback to JSON string for debugging
+          return JSON.stringify(value).substring(0, 50) + (JSON.stringify(value).length > 50 ? '...' : '')
+        }
+        return String(value) || '--'
     }
   }
 
@@ -385,6 +424,9 @@ export default function CompaniesPage() {
         <div className="flex items-center justify-between mb-6 px-6 pt-6">
           <div className="flex items-center space-x-2">
             <h1 className="text-2xl font-semibold text-gray-900">Companies</h1>
+            <div className="text-sm text-gray-500">
+              Columns: {columns.map(col => col.id).join(' → ')}
+            </div>
           </div>
           <div className="flex items-center space-x-3">
             <button className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900">
@@ -485,7 +527,7 @@ export default function CompaniesPage() {
             <thead className="bg-gray-50">
               <tr>
                 {columns.map((column, index) => (
-                  <th key={column.id} className={`${column.width} px-4 py-3 text-left`}>
+                  <th key={`${column.id}-${index}`} className={`${column.width} px-4 py-3 text-left`}>
                     {column.key === 'checkbox' ? (
                       <input
                         type="checkbox"
@@ -527,13 +569,10 @@ export default function CompaniesPage() {
                         </button>
                         <ColumnManager
                           column={column}
-                          onSort={handleColumnSort}
                           onLock={handleColumnLock}
                           onDelete={handleColumnDelete}
                           onAddColumn={handleAddColumn}
                           onMoveColumn={handleMoveColumn}
-                          currentSortKey={sortConfig.key}
-                          currentSortDirection={sortConfig.direction}
                           position={index}
                           totalColumns={columns.length}
                         />
@@ -546,8 +585,8 @@ export default function CompaniesPage() {
             <tbody className="bg-white">
               {getPaginatedCompanies().map((company) => (
                 <tr key={company.id}>
-                  {columns.map((column) => (
-                    <td key={column.id} className={`${column.width} px-4 py-3 text-sm text-gray-900`}>
+                  {columns.map((column, index) => (
+                    <td key={`${column.id}-${index}`} className={`${column.width} px-4 py-3 text-sm text-gray-900`}>
                       {column.key === 'checkbox' ? (
                         <input
                           type="checkbox"

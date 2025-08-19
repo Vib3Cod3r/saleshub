@@ -24,26 +24,20 @@ interface Column {
 
 interface ColumnManagerProps {
   column: Column
-  onSort: (key: string, direction: 'asc' | 'desc') => void
   onLock: (columnId: string, locked: boolean) => void
   onDelete: (columnId: string) => void
   onAddColumn: (position: 'before' | 'after', referenceColumnId: string) => void
   onMoveColumn: (columnId: string, direction: 'left' | 'right') => void
-  currentSortKey: string | null
-  currentSortDirection: 'asc' | 'desc'
   position: number
   totalColumns: number
 }
 
 export function ColumnManager({
   column,
-  onSort,
   onLock,
   onDelete,
   onAddColumn,
   onMoveColumn,
-  currentSortKey,
-  currentSortDirection,
   position,
   totalColumns
 }: ColumnManagerProps) {
@@ -61,15 +55,7 @@ export function ColumnManager({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handleSortAscending = () => {
-    onSort(column.key, 'asc')
-    setIsOpen(false)
-  }
 
-  const handleSortDescending = () => {
-    onSort(column.key, 'desc')
-    setIsOpen(false)
-  }
 
   const handleMoveLeft = () => {
     onMoveColumn(column.id, 'left')
@@ -113,28 +99,10 @@ export function ColumnManager({
       {isOpen && (
         <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
           <div className="py-1">
-            {/* Sort Options */}
-            <button
-              onClick={handleSortAscending}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-            >
-              <ChevronUpIcon className="h-4 w-4" />
-              <span>Sort ascending</span>
-            </button>
-            <button
-              onClick={handleSortDescending}
-              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
-            >
-              <ChevronDownIcon className="h-4 w-4" />
-              <span>Sort descending</span>
-            </button>
-
-            <div className="border-t border-gray-200 my-1"></div>
-
             {/* Move Options */}
             <button
               onClick={handleMoveLeft}
-              disabled={position === 0}
+              disabled={column.locked}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronUpIcon className="h-4 w-4" />
@@ -142,7 +110,7 @@ export function ColumnManager({
             </button>
             <button
               onClick={handleMoveRight}
-              disabled={position === totalColumns - 1}
+              disabled={column.locked}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronDownIcon className="h-4 w-4" />
