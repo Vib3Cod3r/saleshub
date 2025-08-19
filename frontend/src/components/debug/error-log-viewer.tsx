@@ -20,11 +20,16 @@ export function ErrorLogViewer() {
 
   useEffect(() => {
     const updateLogs = () => {
-      setLogs(errorLogger.getLogs())
+      try {
+        setLogs(errorLogger.getLogs())
+      } catch (error) {
+        // Prevent infinite recursion by not logging errors from the error logger itself
+        console.warn('Error updating logs:', error)
+      }
     }
 
-    // Update logs every second
-    const interval = setInterval(updateLogs, 1000)
+    // Update logs every 5 seconds instead of every second to reduce overhead
+    const interval = setInterval(updateLogs, 5000)
     updateLogs() // Initial load
 
     return () => clearInterval(interval)

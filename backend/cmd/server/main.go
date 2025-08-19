@@ -2,15 +2,11 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
-
-	"saleshub-backend/config"
-	"saleshub-backend/handlers"
-	"saleshub-backend/middleware"
 )
 
 func main() {
@@ -19,194 +15,193 @@ func main() {
 		log.Println("No .env file found, using default values")
 	}
 
-	// Initialize database
-	config.InitDatabase()
-	config.AutoMigrate()
-	config.SeedDatabase()
-
-	// Setup API logging
-	apiLogConfig := config.DefaultAPILoggingConfig()
-	config.SetupAPILogging(apiLogConfig)
-
-	// Set Gin mode
-	if os.Getenv("ENV") == "production" {
-		gin.SetMode(gin.ReleaseMode)
+	// Get port from environment
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8089"
 	}
 
-	// Create Gin router
-	r := gin.Default()
+	// Set Gin mode
+	gin.SetMode(gin.ReleaseMode)
 
-	// CORS configuration
-	corsConfig := cors.DefaultConfig()
-	corsConfig.AllowOrigins = []string{"http://localhost:3000"}
-	corsConfig.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	corsConfig.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	corsConfig.AllowCredentials = true
-	r.Use(cors.New(corsConfig))
+	// Create router
+	r := gin.New()
+	
+	// Use only essential middleware
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
+	r.Use(corsMiddleware())
 
-	// API logging middleware
-	apiLoggerConfig := middleware.DefaultAPILoggerConfig()
-	r.Use(middleware.APILogger(apiLoggerConfig))
-
-	// Health check endpoint
+	// Health check
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"message": "SalesHub CRM API is running",
+			"port":    port,
 		})
 	})
 
 	// API routes
 	api := r.Group("/api")
 	{
-		// Authentication routes (public)
+		// Auth routes
 		auth := api.Group("/auth")
 		{
-			auth.POST("/register", handlers.Register)
-			auth.POST("/login", handlers.Login)
+			auth.POST("/login", handleLogin)
+			auth.POST("/register", handleRegister)
+			auth.GET("/me", handleGetProfile)
 		}
 
-		// Protected routes
-		protected := api.Group("")
-		protected.Use(middleware.AuthMiddleware())
+		// CRM routes
+		crm := api.Group("/crm")
 		{
-			// User profile routes
-			auth := protected.Group("/auth")
+			companies := crm.Group("/companies")
 			{
-				auth.GET("/me", handlers.GetProfile)
-				auth.PUT("/profile", handlers.UpdateProfile)
-				auth.PUT("/password", handlers.ChangePassword)
-				auth.POST("/refresh", handlers.RefreshToken)
+				companies.GET("", handleGetCompanies)
+				companies.POST("", handleCreateCompany)
+				companies.GET("/:id", handleGetCompany)
 			}
 
-			// CRM routes
-			crm := protected.Group("/crm")
+			contacts := crm.Group("/contacts")
 			{
-				// Users
-				users := crm.Group("/users")
-				{
-					users.GET("", handlers.GetUsers)
-				}
-
-				// Companies
-				companies := crm.Group("/companies")
-				{
-					companies.GET("", handlers.GetCompanies)
-					companies.POST("", handlers.CreateCompany)
-					companies.GET("/:id", handlers.GetCompany)
-					companies.PUT("/:id", handlers.UpdateCompany)
-					companies.DELETE("/:id", handlers.DeleteCompany)
-				}
-
-				// Contacts
-				contacts := crm.Group("/contacts")
-				{
-					contacts.GET("", handlers.GetContacts)
-					contacts.POST("", handlers.CreateContact)
-					contacts.GET("/:id", handlers.GetContact)
-					contacts.PUT("/:id", handlers.UpdateContact)
-					contacts.DELETE("/:id", handlers.DeleteContact)
-				}
-
-				// Leads
-				leads := crm.Group("/leads")
-				{
-					leads.GET("", handlers.GetLeads)
-					leads.POST("", handlers.CreateLead)
-					leads.GET("/:id", handlers.GetLead)
-					leads.PUT("/:id", handlers.UpdateLead)
-					leads.DELETE("/:id", handlers.DeleteLead)
-				}
-
-				// Deals
-				deals := crm.Group("/deals")
-				{
-					deals.GET("", handlers.GetDeals)
-					deals.POST("", handlers.CreateDeal)
-					deals.GET("/:id", handlers.GetDeal)
-					deals.PUT("/:id", handlers.UpdateDeal)
-					deals.DELETE("/:id", handlers.DeleteDeal)
-				}
-
-				// Pipelines
-				pipelines := crm.Group("/pipelines")
-				{
-					pipelines.GET("", handlers.GetPipelines)
-					pipelines.POST("", handlers.CreatePipeline)
-					pipelines.GET("/:id", handlers.GetPipeline)
-					pipelines.PUT("/:id", handlers.UpdatePipeline)
-					pipelines.DELETE("/:id", handlers.DeletePipeline)
-				}
-
-				// Tasks
-				tasks := crm.Group("/tasks")
-				{
-					tasks.GET("", handlers.GetTasks)
-					tasks.POST("", handlers.CreateTask)
-					tasks.GET("/:id", handlers.GetTask)
-					tasks.PUT("/:id", handlers.UpdateTask)
-					tasks.DELETE("/:id", handlers.DeleteTask)
-				}
-
-				// Communications
-				communications := crm.Group("/communications")
-				{
-					communications.GET("", handlers.GetCommunications)
-					communications.POST("", handlers.CreateCommunication)
-					communications.GET("/:id", handlers.GetCommunication)
-					communications.PUT("/:id", handlers.UpdateCommunication)
-					communications.DELETE("/:id", handlers.DeleteCommunication)
-				}
+				contacts.GET("", handleGetContacts)
+				contacts.POST("", handleCreateContact)
+				contacts.GET("/:id", handleGetContact)
 			}
 
-			// Marketing routes
-			marketing := protected.Group("/marketing")
+			leads := crm.Group("/leads")
 			{
-				// Marketing sources
-				sources := marketing.Group("/sources")
-				{
-					sources.GET("", handlers.GetMarketingSources)
-					sources.POST("", handlers.CreateMarketingSource)
-					sources.GET("/:id", handlers.GetMarketingSource)
-					sources.PUT("/:id", handlers.UpdateMarketingSource)
-					sources.DELETE("/:id", handlers.DeleteMarketingSource)
-				}
-
-				// Marketing assets
-				assets := marketing.Group("/assets")
-				{
-					assets.GET("", handlers.GetMarketingAssets)
-					assets.POST("", handlers.CreateMarketingAsset)
-					assets.GET("/:id", handlers.GetMarketingAsset)
-					assets.PUT("/:id", handlers.UpdateMarketingAsset)
-					assets.DELETE("/:id", handlers.DeleteMarketingAsset)
-				}
-			}
-
-			// Lookup data routes
-			lookups := protected.Group("/lookups")
-			{
-				lookups.GET("/lead-statuses", handlers.GetLeadStatuses)
-				lookups.GET("/lead-temperatures", handlers.GetLeadTemperatures)
-				lookups.GET("/industries", handlers.GetIndustries)
-				lookups.GET("/company-sizes", handlers.GetCompanySizes)
-				lookups.GET("/task-types", handlers.GetTaskTypes)
-				lookups.GET("/communication-types", handlers.GetCommunicationTypes)
-				lookups.GET("/email-address-types", handlers.GetEmailAddressTypes)
-				lookups.GET("/phone-number-types", handlers.GetPhoneNumberTypes)
-				lookups.GET("/address-types", handlers.GetAddressTypes)
+				leads.GET("", handleGetLeads)
+				leads.POST("", handleCreateLead)
+				leads.GET("/:id", handleGetLead)
 			}
 		}
 	}
 
-	// Get port from environment or use default
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8089"
-	}
-
+	// Start server
 	log.Printf("Starting SalesHub CRM API server on port %s", port)
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
+}
+
+// Simple CORS middleware
+func corsMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		origin := c.Request.Header.Get("Origin")
+		
+		// Allow localhost origins
+		if origin == "http://localhost:3000" || origin == "http://127.0.0.1:3000" {
+			c.Header("Access-Control-Allow-Origin", origin)
+		}
+		
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization")
+		
+		// Handle preflight
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+			return
+		}
+		
+		c.Next()
+	}
+}
+
+// Simple handlers - just return mock data for now
+func handleLogin(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Login endpoint",
+		"token":   "mock-jwt-token",
+	})
+}
+
+func handleRegister(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Register endpoint",
+		"user":    gin.H{"id": 1, "email": "user@example.com"},
+	})
+}
+
+func handleGetProfile(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Get profile endpoint",
+		"user":    gin.H{"id": 1, "email": "user@example.com", "name": "Test User"},
+	})
+}
+
+func handleGetCompanies(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Get companies endpoint",
+		"companies": []gin.H{
+			{"id": 1, "name": "Acme Corp", "industry": "Technology"},
+			{"id": 2, "name": "TechStart", "industry": "Software"},
+		},
+	})
+}
+
+func handleCreateCompany(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Create company endpoint",
+		"company": gin.H{"id": 3, "name": "New Company"},
+	})
+}
+
+func handleGetCompany(c *gin.Context) {
+	id := c.Param("id")
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Get company endpoint",
+		"company": gin.H{"id": id, "name": "Company " + id},
+	})
+}
+
+func handleGetContacts(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Get contacts endpoint",
+		"contacts": []gin.H{
+			{"id": 1, "name": "John Doe", "email": "john@example.com"},
+			{"id": 2, "name": "Jane Smith", "email": "jane@example.com"},
+		},
+	})
+}
+
+func handleCreateContact(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Create contact endpoint",
+		"contact": gin.H{"id": 3, "name": "New Contact"},
+	})
+}
+
+func handleGetContact(c *gin.Context) {
+	id := c.Param("id")
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Get contact endpoint",
+		"contact": gin.H{"id": id, "name": "Contact " + id},
+	})
+}
+
+func handleGetLeads(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Get leads endpoint",
+		"leads": []gin.H{
+			{"id": 1, "name": "Lead 1", "status": "New"},
+			{"id": 2, "name": "Lead 2", "status": "Qualified"},
+		},
+	})
+}
+
+func handleCreateLead(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Create lead endpoint",
+		"lead": gin.H{"id": 3, "name": "New Lead"},
+	})
+}
+
+func handleGetLead(c *gin.Context) {
+	id := c.Param("id")
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Get lead endpoint",
+		"lead": gin.H{"id": id, "name": "Lead " + id},
+	})
 }

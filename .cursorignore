@@ -4,7 +4,7 @@
 # Protected components (only modify if explicitly requested)
 frontend/src/app/deals/page.tsx
 # frontend/src/app/contacts/page.tsx - TEMPORARILY UNLOCKED FOR PAGINATION UPDATE
-frontend/src/app/companies/page.tsx
+# frontend/src/app/companies/page.tsx - TEMPORARILY UNLOCKED FOR UNIFICATION WITH CONTACTS PAGE
 
 # Protected layout components
 # frontend/src/components/layout/header.tsx - TEMPORARILY UNLOCKED FOR PLACEHOLDER CREATION

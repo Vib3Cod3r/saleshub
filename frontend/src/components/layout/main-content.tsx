@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
-import { ErrorBoundary } from '../error-boundary'
+import ErrorBoundary from '../error-boundary'
 
 interface MainContentProps {
   children: React.ReactNode

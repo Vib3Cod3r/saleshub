@@ -12,7 +12,7 @@ import {
   ArrowDownIcon
 } from '@heroicons/react/24/outline'
 import { useQuery } from '@tanstack/react-query'
-// Direct API calls instead of apiClient
+import { apiClient } from '@/lib/utils'
 
 interface Company {
   id: string
@@ -39,77 +39,25 @@ export default function DashboardPage() {
 
   const { data: companiesData } = useQuery({
     queryKey: ['companies', { limit: 5 }],
-    queryFn: async () => {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:8089/api/crm/companies?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
-      }
-      return response.json()
-    },
+    queryFn: () => apiClient.crm.companies(5),
     enabled: !!user,
   })
 
   const { data: contactsData } = useQuery({
     queryKey: ['contacts', { limit: 5 }],
-    queryFn: async () => {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:8089/api/crm/contacts?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
-      }
-      return response.json()
-    },
+    queryFn: () => apiClient.crm.contacts(5),
     enabled: !!user,
   })
 
   const { data: leadsData } = useQuery({
     queryKey: ['leads', { limit: 5 }],
-    queryFn: async () => {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:8089/api/crm/leads?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
-      }
-      return response.json()
-    },
+    queryFn: () => apiClient.crm.leads(5),
     enabled: !!user,
   })
 
   const { data: dealsData } = useQuery({
     queryKey: ['deals', { limit: 5 }],
-    queryFn: async () => {
-      const token = localStorage.getItem('token')
-      const response = await fetch('http://localhost:8089/api/crm/deals?limit=5', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}))
-        throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`)
-      }
-      return response.json()
-    },
+    queryFn: () => apiClient.crm.deals(5),
     enabled: !!user,
   })
 
