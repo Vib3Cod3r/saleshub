@@ -97,7 +97,10 @@ export function ColumnManager({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className="fixed w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999]" style={{
+          top: menuRef.current?.getBoundingClientRect().bottom + 4,
+          left: menuRef.current?.getBoundingClientRect().left
+        }}>
           <div className="py-1">
             {/* Move Options */}
             <button
