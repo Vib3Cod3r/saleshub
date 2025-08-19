@@ -34,7 +34,13 @@ interface Company {
     postalCode?: string
     country?: string
   }>
-  owner?: {
+  ownerContact?: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+  assignedUser?: {
     id: string
     firstName: string
     lastName: string
@@ -79,7 +85,7 @@ export default function CompaniesPage() {
     const loadInitialData = async () => {
       setLoading(true)
       await fetchAllCompanies()
-      setLoading(false)
+      // Note: setLoading(false) is now handled within fetchAllCompanies
     }
     loadInitialData()
   }, [])
@@ -103,6 +109,7 @@ export default function CompaniesPage() {
       
       if (!token) {
         console.error('No authentication token found')
+        setLoading(false)
         return
       }
 
@@ -114,14 +121,24 @@ export default function CompaniesPage() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          console.error('Authentication failed - token may be expired')
+          // Clear invalid token
+          localStorage.removeItem('token')
+          // Redirect to login will be handled by ProtectedRoute
+          return
+        }
         console.error('Failed to fetch all companies for search')
+        setLoading(false)
         return
       }
 
       const data: CompaniesResponse = await response.json()
       setAllCompanies(data.data)
+      setLoading(false)
     } catch (err) {
       console.error('Error fetching all companies for search:', err)
+      setLoading(false)
     }
   }
 
@@ -169,8 +186,8 @@ export default function CompaniesPage() {
   }
 
   const getCompanyOwner = (company: Company) => {
-    if (company.owner) {
-      return `${company.owner.firstName} ${company.owner.lastName}`
+    if (company.ownerContact) {
+      return `${company.ownerContact.firstName} ${company.ownerContact.lastName}`
     }
     return 'No owner'
   }
@@ -210,11 +227,14 @@ export default function CompaniesPage() {
   }
 
   const getFilteredCompanies = () => {
-    if (!searchQuery.trim()) return allCompanies
+    // Ensure allCompanies is always an array
+    const companies = allCompanies || []
+    
+    if (!searchQuery.trim()) return companies
 
     const query = searchQuery.toLowerCase().trim()
     
-    return allCompanies.filter(company => {
+    return companies.filter(company => {
       const name = getCompanyName(company).toLowerCase()
       const email = getCompanyEmail(company).toLowerCase()
       const phone = getCompanyPhone(company).toLowerCase()

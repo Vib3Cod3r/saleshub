@@ -10,6 +10,8 @@ import {
 } from '@heroicons/react/24/outline'
 import { LockClosedIcon } from '@heroicons/react/24/solid'
 import { CreateContactModal } from '@/components/contacts/create-contact-modal'
+import { ColumnManager } from '@/components/ui/column-manager'
+import { AddColumnModal } from '@/components/ui/add-column-modal'
 
 interface Contact {
   id: string
@@ -28,8 +30,25 @@ interface Contact {
     email: string
   }
   leadStatus?: string
+  address?: {
+    street?: string
+    city?: string
+    country?: string
+  }
   createdAt: string
   updatedAt: string
+  [key: string]: any // For custom fields
+}
+
+interface Column {
+  id: string
+  label: string
+  key: string
+  width: string
+  sortable: boolean
+  locked: boolean
+  removable: boolean
+  type?: string
 }
 
 interface ContactsResponse {
@@ -61,6 +80,23 @@ export default function ContactsPage() {
     direction: 'asc'
   })
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isAddColumnModalOpen, setIsAddColumnModalOpen] = useState(false)
+  
+  // Column configuration
+  const [columns, setColumns] = useState<Column[]>([
+    { id: 'checkbox', label: '', key: 'checkbox', width: 'w-16', sortable: false, locked: true, removable: false },
+    { id: 'name', label: 'NAME', key: 'name', width: 'w-56', sortable: true, locked: false, removable: false },
+    { id: 'email', label: 'EMAIL', key: 'email', width: 'w-72', sortable: true, locked: false, removable: false },
+    { id: 'phone', label: 'PHONE NUMBER', key: 'phone', width: 'w-48', sortable: true, locked: false, removable: false },
+    { id: 'owner', label: 'CONTACT OWNER', key: 'owner', width: 'w-56', sortable: true, locked: false, removable: false },
+    { id: 'company', label: 'PRIMARY COMPANY', key: 'company', width: 'w-64', sortable: true, locked: false, removable: false },
+    { id: 'lastActivity', label: 'LAST ACTIVITY DATE (GMT+8)', key: 'lastActivity', width: 'w-80', sortable: true, locked: false, removable: false },
+    { id: 'leadStatus', label: 'LEAD STATUS', key: 'leadStatus', width: 'w-40', sortable: true, locked: false, removable: false },
+    { id: 'address', label: 'FULL ADDRESS', key: 'address', width: 'w-80', sortable: true, locked: false, removable: false },
+    { id: 'city', label: 'CITY', key: 'city', width: 'w-48', sortable: true, locked: false, removable: false },
+    { id: 'country', label: 'COUNTRY', key: 'country', width: 'w-48', sortable: true, locked: false, removable: false },
+    { id: 'createdAt', label: 'CREATION DATE', key: 'createdAt', width: 'w-80', sortable: true, locked: false, removable: false }
+  ])
 
   // Fetch all contacts for search functionality
   useEffect(() => {
@@ -157,6 +193,18 @@ export default function ContactsPage() {
     return 'No owner'
   }
 
+  const getContactAddress = (contact: Contact) => {
+    return contact.address?.street || '--'
+  }
+
+  const getContactCity = (contact: Contact) => {
+    return contact.address?.city || '--'
+  }
+
+  const getContactCountry = (contact: Contact) => {
+    return contact.address?.country || '--'
+  }
+
   const getContactAvatar = (contact: Contact) => {
     const name = getContactName(contact)
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -173,18 +221,27 @@ export default function ContactsPage() {
   }
 
   const getFilteredContacts = () => {
-    if (!searchQuery.trim()) return allContacts
+    // Ensure allContacts is always an array
+    const contacts = allContacts || []
+    
+    if (!searchQuery.trim()) return contacts
 
     const query = searchQuery.toLowerCase().trim()
     
-    return allContacts.filter(contact => {
+    return contacts.filter(contact => {
       const name = getContactName(contact).toLowerCase()
       const email = getContactEmail(contact).toLowerCase()
       const phone = getContactPhone(contact).toLowerCase()
+      const address = getContactAddress(contact).toLowerCase()
+      const city = getContactCity(contact).toLowerCase()
+      const country = getContactCountry(contact).toLowerCase()
       
       return name.includes(query) || 
              email.includes(query) || 
-             phone.includes(query)
+             phone.includes(query) ||
+             address.includes(query) ||
+             city.includes(query) ||
+             country.includes(query)
     })
   }
 
@@ -220,6 +277,26 @@ export default function ContactsPage() {
         case 'lastActivity':
           aValue = new Date(a.updatedAt).getTime()
           bValue = new Date(b.updatedAt).getTime()
+          break
+        case 'address':
+          aValue = getContactAddress(a).toLowerCase()
+          bValue = getContactAddress(b).toLowerCase()
+          break
+        case 'city':
+          aValue = getContactCity(a).toLowerCase()
+          bValue = getContactCity(b).toLowerCase()
+          break
+        case 'country':
+          aValue = getContactCountry(a).toLowerCase()
+          bValue = getContactCountry(b).toLowerCase()
+          break
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime()
+          bValue = new Date(b.createdAt).getTime()
+          break
+        case 'leadStatus':
+          aValue = (a.leadStatus || '').toLowerCase()
+          bValue = (b.leadStatus || '').toLowerCase()
           break
         default:
           return 0
@@ -279,6 +356,99 @@ export default function ContactsPage() {
     fetchAllContacts()
   }
 
+  // Column management functions
+  const handleColumnSort = (key: string, direction: 'asc' | 'desc') => {
+    setSortConfig({ key, direction })
+  }
+
+  const handleMoveColumn = (columnId: string, direction: 'left' | 'right') => {
+    setColumns(prev => {
+      const currentIndex = prev.findIndex(col => col.id === columnId)
+      if (currentIndex === -1) return prev
+
+      const newColumns = [...prev]
+      const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1
+
+      // Check bounds
+      if (targetIndex < 0 || targetIndex >= newColumns.length) return prev
+
+      // Check if target column is locked
+      if (newColumns[targetIndex].locked) return prev
+
+      // Swap columns
+      [newColumns[currentIndex], newColumns[targetIndex]] = [newColumns[targetIndex], newColumns[currentIndex]]
+
+      return newColumns
+    })
+  }
+
+  const handleColumnLock = (columnId: string, locked: boolean) => {
+    setColumns(prev => prev.map(col => 
+      col.id === columnId ? { ...col, locked } : col
+    ))
+  }
+
+  const handleColumnDelete = (columnId: string) => {
+    setColumns(prev => prev.filter(col => col.id !== columnId))
+  }
+
+  const handleAddColumn = (position: 'before' | 'after', referenceColumnId: string) => {
+    setIsAddColumnModalOpen(true)
+  }
+
+  const handleAddCustomColumn = (columnData: {
+    id: string
+    label: string
+    key: string
+    width: string
+    type: string
+  }) => {
+    const newColumn: Column = {
+      id: columnData.id,
+      label: columnData.label,
+      key: columnData.key,
+      width: columnData.width,
+      sortable: true,
+      locked: false,
+      removable: true,
+      type: columnData.type
+    }
+    
+    setColumns(prev => [...prev, newColumn])
+  }
+
+  const getColumnValue = (contact: Contact, columnKey: string) => {
+    switch (columnKey) {
+      case 'name':
+        return getContactName(contact)
+      case 'email':
+        return getContactEmail(contact)
+      case 'phone':
+        return getContactPhone(contact)
+      case 'owner':
+        return getContactOwner(contact)
+      case 'company':
+        return getContactCompany(contact)
+      case 'lastActivity':
+        return formatDate(contact.updatedAt)
+      case 'leadStatus':
+        if (contact.leadStatus) {
+          return `<span class="lead-status-badge lead-status-active">${contact.leadStatus}</span>`
+        }
+        return `<span class="lead-status-badge lead-status-default">--</span>`
+      case 'address':
+        return getContactAddress(contact)
+      case 'city':
+        return getContactCity(contact)
+      case 'country':
+        return getContactCountry(contact)
+      case 'createdAt':
+        return formatDate(contact.createdAt)
+      default:
+        return contact[columnKey] || '--'
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-white">
@@ -294,10 +464,10 @@ export default function ContactsPage() {
 
 
   return (
-    <div className="bg-white">
-      <div className="w-full">
+    <div className="bg-white h-full">
+      <div className="w-full h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 px-6 pt-6">
           <div className="flex items-center space-x-2">
             <h1 className="text-2xl font-semibold text-gray-900">Contacts</h1>
           </div>
@@ -327,7 +497,7 @@ export default function ContactsPage() {
 
 
         {/* Search, Filters, and Actions */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 px-6">
           {/* Left side - Search and Filters */}
           <div className="flex items-center space-x-4">
             {/* Search Bar */}
@@ -335,7 +505,7 @@ export default function ContactsPage() {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search name, phone, email"
+                placeholder="Q Search name, phone, email"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -379,12 +549,17 @@ export default function ContactsPage() {
               })()}
             </span>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Export</button>
-            <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Edit columns</button>
+            <button 
+              onClick={() => setIsAddColumnModalOpen(true)}
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              Add column
+            </button>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="w-full">
+        {/* Table with horizontal scrolling support */}
+        <div className="w-full overflow-x-auto shadow-sm border border-gray-200 rounded-lg relative table-scroll-container mx-6 mb-6 flex-1">
           {getPaginatedContacts().length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500 text-lg mb-2">
@@ -400,228 +575,118 @@ export default function ContactsPage() {
               )}
             </div>
           ) : (
-            <table className="w-full table-fixed">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <table className="w-full min-w-[2000px] table-fixed contacts-table">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="w-12 px-4 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={selectedContacts.length === getFilteredContacts().length && getFilteredContacts().length > 0}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                </th>
-                <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('name')}
-                  >
-                    <span>NAME</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'name' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
+                {columns.map((column, index) => (
+                  <th key={column.id} className={`${column.width} px-4 py-3 text-left`}>
+                    {column.key === 'checkbox' ? (
+                      <input
+                        type="checkbox"
+                        checked={selectedContacts.length === getFilteredContacts().length && getFilteredContacts().length > 0}
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                       />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'name' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-64 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('email')}
-                  >
-                    <span>EMAIL</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'email' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'email' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('phone')}
-                  >
-                    <span>PHONE NUMBER</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'phone' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'phone' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('owner')}
-                  >
-                    <span>CONTACT OWNER</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'owner' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'owner' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('company')}
-                  >
-                    <span>PRIMARY COMPANY</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'company' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'company' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('lastActivity')}
-                  >
-                    <span>LAST ACTIVITY DATE (GMT+8)</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'lastActivity' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'lastActivity' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
-                    <span>LEAD STATUS</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
-                </th>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <button 
+                          className="flex items-center space-x-1 hover:text-gray-700"
+                          onClick={() => column.sortable && handleSort(column.key)}
+                          disabled={!column.sortable}
+                        >
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {column.label}
+                          </span>
+                          {column.locked && (
+                            <LockClosedIcon className="h-3 w-3 text-gray-400" />
+                          )}
+                          {column.sortable && (
+                            <div className="flex flex-col">
+                              <ChevronUpIcon 
+                                className={`h-3 w-3 ${
+                                  sortConfig.key === column.key && sortConfig.direction === 'asc' 
+                                    ? 'text-orange-500' 
+                                    : 'text-gray-400'
+                                }`} 
+                              />
+                              <ChevronDownIcon 
+                                className={`h-3 w-3 ${
+                                  sortConfig.key === column.key && sortConfig.direction === 'desc' 
+                                    ? 'text-orange-500' 
+                                    : 'text-gray-400'
+                                }`} 
+                              />
+                            </div>
+                          )}
+                        </button>
+                        <ColumnManager
+                          column={column}
+                          onSort={handleColumnSort}
+                          onLock={handleColumnLock}
+                          onDelete={handleColumnDelete}
+                          onAddColumn={handleAddColumn}
+                          onMoveColumn={handleMoveColumn}
+                          currentSortKey={sortConfig.key}
+                          currentSortDirection={sortConfig.direction}
+                          position={index}
+                          totalColumns={columns.length}
+                        />
+                      </div>
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white">
               {getPaginatedContacts().map((contact) => (
-                <tr key={contact.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedContacts.includes(contact.id)}
-                      onChange={() => handleSelectContact(contact.id)}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700">
-                        {getContactAvatar(contact)}
-                      </div>
-                      <span className="text-sm font-medium text-gray-900">{getContactName(contact)}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{getContactEmail(contact)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{getContactPhone(contact)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span className="text-xs text-gray-600">👤</span>
-                      </div>
-                      <span className="text-sm text-gray-900">{getContactOwner(contact)}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded bg-gray-300 flex items-center justify-center">
-                        <span className="text-xs text-gray-600">🏢</span>
-                      </div>
-                      <span className="text-sm text-gray-900">{getContactCompany(contact)}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{formatDate(contact.updatedAt)}</td>
-                  <td className="px-4 py-3">
-                    {contact.leadStatus ? (
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                        {contact.leadStatus}
-                      </span>
-                    ) : (
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
-                        --
-                      </span>
-                    )}
-                  </td>
+                <tr key={contact.id}>
+                  {columns.map((column) => (
+                    <td key={column.id} className={`${column.width} px-4 py-3 text-sm text-gray-900`}>
+                      {column.key === 'checkbox' ? (
+                        <input
+                          type="checkbox"
+                          checked={selectedContacts.includes(contact.id)}
+                          onChange={() => handleSelectContact(contact.id)}
+                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        />
+                      ) : column.key === 'name' ? (
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700 flex-shrink-0">
+                            {getContactAvatar(contact)}
+                          </div>
+                          <div className="table-cell-content" title={getColumnValue(contact, column.key)}>
+                            <span className="text-sm font-medium text-gray-900">{getColumnValue(contact, column.key)}</span>
+                          </div>
+                        </div>
+                      ) : column.key === 'owner' ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs text-gray-600">👤</span>
+                          </div>
+                          <div className="table-cell-content" title={getColumnValue(contact, column.key)}>
+                            <span className="text-sm text-gray-900">{getColumnValue(contact, column.key)}</span>
+                          </div>
+                        </div>
+                      ) : column.key === 'company' ? (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-5 h-5 rounded bg-gray-300 flex items-center justify-center flex-shrink-0">
+                            <span className="text-xs text-gray-600">🏢</span>
+                          </div>
+                          <div className="table-cell-content" title={getColumnValue(contact, column.key)}>
+                            <span className="text-sm text-gray-900">{getColumnValue(contact, column.key)}</span>
+                          </div>
+                        </div>
+                      ) : column.key === 'leadStatus' ? (
+                        <div className="table-cell-content" title={getColumnValue(contact, column.key)}>
+                          <div dangerouslySetInnerHTML={{ __html: getColumnValue(contact, column.key) }} />
+                        </div>
+                      ) : (
+                        <div className="table-cell-content" title={getColumnValue(contact, column.key)}>
+                          {getColumnValue(contact, column.key)}
+                        </div>
+                      )}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -631,7 +696,7 @@ export default function ContactsPage() {
 
         {/* Pagination */}
         {getPaginatedContacts().length > 0 && (
-          <div className="flex items-center justify-center space-x-2 mt-12 pt-6">
+          <div className="flex items-center justify-center space-x-2 mt-2 pt-6 px-6 pb-6">
           {(() => {
             const paginationInfo = getPaginationInfo()
             
@@ -699,7 +764,7 @@ export default function ContactsPage() {
                           key={pageNum}
                           className={`px-2 py-1 text-sm font-medium rounded ${
                             pageNum === currentPage
-                              ? 'text-black font-semibold' // Current page - black and bold
+                              ? 'text-orange-600 font-semibold' // Current page - orange and bold
                               : 'text-blue-600 hover:text-blue-800' // Other pages - blue
                           }`}
                           onClick={() => setPagination(prev => ({ ...prev, page: pageNum as number }))}
@@ -735,6 +800,13 @@ export default function ContactsPage() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateContactSuccess}
+      />
+
+      {/* Add Column Modal */}
+      <AddColumnModal
+        isOpen={isAddColumnModalOpen}
+        onClose={() => setIsAddColumnModalOpen(false)}
+        onAddColumn={handleAddCustomColumn}
       />
     </div>
   )

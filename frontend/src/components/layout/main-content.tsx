@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Header } from './header'
 import { Sidebar } from './sidebar'
 import ErrorBoundary from '../error-boundary'
+import { ProtectedRoute } from './protected-route'
 
 interface MainContentProps {
   children: React.ReactNode
@@ -45,26 +46,28 @@ export function MainContent({ children }: MainContentProps) {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-slate-800">
-        <Sidebar 
-          sidebarOpen={sidebarOpen} 
-          setSidebarOpen={setSidebarOpen}
-          logoImage="/c74beb39e6a8fc1b9bd06592c750b4c9(1).png"
-          logoAlt="SalesHub Logo"
-        />
-        
-        <div className="lg:pl-16 flex flex-col h-screen">
-          <Header onMenuClick={() => setSidebarOpen(true)} />
+      <ProtectedRoute>
+        <div className="min-h-screen" style={{ backgroundColor: '#402D50' }}>
+          <Sidebar 
+            sidebarOpen={sidebarOpen} 
+            setSidebarOpen={setSidebarOpen}
+            logoImage="/c74beb39e6a8fc1b9bd06592c750b4c9(1).png"
+            logoAlt="SalesHub Logo"
+          />
           
-          <div className="flex-1 lg:rounded-tl-2xl bg-white overflow-auto">
-            <main className="py-6">
-              <div className="px-4 sm:px-6 lg:px-8">
-                {children}
-              </div>
-            </main>
+          <div className="lg:pl-16 flex flex-col h-screen" style={{ paddingLeft: '64px' }}>
+            <Header onMenuClick={() => setSidebarOpen(true)} />
+            
+            <div className="flex-1 bg-white overflow-hidden rounded-tl-4xl">
+              <main className="py-0">
+                <div className="px-0">
+                  {children}
+                </div>
+              </main>
+            </div>
           </div>
         </div>
-      </div>
+      </ProtectedRoute>
     </ErrorBoundary>
   )
 }

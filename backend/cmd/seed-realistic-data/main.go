@@ -23,21 +23,21 @@ type CompanyData struct {
 }
 
 type ContactData struct {
-	firstName string
-	lastName  string
-	title     string
+	firstName  string
+	lastName   string
+	title      string
 	department string
-	email     string
-	phone     string
+	email      string
+	phone      string
 	leadStatus string
 }
 
 type AddressData struct {
-	street   string
-	city     string
-	state    string
-	zipCode  string
-	country  string
+	street  string
+	city    string
+	state   string
+	zipCode string
+	country string
 }
 
 func main() {
@@ -194,13 +194,13 @@ func main() {
 	// Create companies and contacts
 	for i, companyData := range companies {
 		// Create company
-		company := createCompany(companyData, industries, sizes, tenant.ID)
-		
+		company := createCompany(companyData, industries, sizes, phoneTypes, emailTypes, tenant.ID)
+
 		// Create primary contact for company
 		if i < len(contacts) {
 			createContact(contacts[i], company.ID, leadStatuses, phoneTypes, emailTypes, tenant.ID)
 		}
-		
+
 		// Create additional contacts for larger companies
 		if companyData.size == "LARGE" || companyData.size == "ENTERPRISE" {
 			additionalContacts := getAdditionalContacts(companyData.name, companyData.domain)
@@ -224,7 +224,7 @@ func getIndustries(tenantID string) map[string]models.Industry {
 	industries := make(map[string]models.Industry)
 	var industryList []models.Industry
 	config.DB.Where("tenant_id = ?", tenantID).Find(&industryList)
-	
+
 	for _, industry := range industryList {
 		industries[industry.Code] = industry
 	}
@@ -235,7 +235,7 @@ func getCompanySizes(tenantID string) map[string]models.CompanySize {
 	sizes := make(map[string]models.CompanySize)
 	var sizeList []models.CompanySize
 	config.DB.Where("tenant_id = ?", tenantID).Find(&sizeList)
-	
+
 	for _, size := range sizeList {
 		sizes[size.Code] = size
 	}
@@ -252,7 +252,7 @@ func getPhoneTypes(tenantID string) map[string]models.PhoneNumberType {
 	types := make(map[string]models.PhoneNumberType)
 	var typeList []models.PhoneNumberType
 	config.DB.Where("tenant_id = ?", tenantID).Find(&typeList)
-	
+
 	for _, phoneType := range typeList {
 		types[phoneType.Code] = phoneType
 	}
@@ -263,19 +263,28 @@ func getEmailTypes(tenantID string) map[string]models.EmailAddressType {
 	types := make(map[string]models.EmailAddressType)
 	var typeList []models.EmailAddressType
 	config.DB.Where("tenant_id = ?", tenantID).Find(&typeList)
-	
+
 	for _, emailType := range typeList {
 		types[emailType.Code] = emailType
 	}
 	return types
 }
 
-func createCompany(data CompanyData, industries map[string]models.Industry, sizes map[string]models.CompanySize, tenantID string) models.Company {
+func createCompany(data CompanyData, industries map[string]models.Industry, sizes map[string]models.CompanySize, phoneTypes map[string]models.PhoneNumberType, emailTypes map[string]models.EmailAddressType, tenantID string) models.Company {
 	// Check if company already exists
 	var existingCompany models.Company
 	if err := config.DB.Where("name = ? AND tenant_id = ?", data.name, tenantID).First(&existingCompany).Error; err == nil {
 		log.Printf("Company already exists: %s", data.name)
 		return existingCompany
+	}
+
+	// Get a random user to assign as owner
+	var users []models.User
+	config.DB.Where("tenant_id = ?", tenantID).Find(&users)
+	var assignedTo *string
+	if len(users) > 0 {
+		randomUser := users[rand.Intn(len(users))]
+		assignedTo = &randomUser.ID
 	}
 
 	company := models.Company{
@@ -286,6 +295,7 @@ func createCompany(data CompanyData, industries map[string]models.Industry, size
 		IndustryID: industries[data.industry].ID,
 		SizeID:     sizes[data.size].ID,
 		Revenue:    &data.revenue,
+		AssignedTo: assignedTo,
 		TenantID:   tenantID,
 	}
 
@@ -304,7 +314,7 @@ func createCompany(data CompanyData, industries map[string]models.Industry, size
 func createContact(data ContactData, companyID string, leadStatuses []models.LeadStatus, phoneTypes map[string]models.PhoneNumberType, emailTypes map[string]models.EmailAddressType, tenantID string) {
 	// Check if contact already exists
 	var existingContact models.Contact
-	if err := config.DB.Where("first_name = ? AND last_name = ? AND company_id = ? AND tenant_id = ?", 
+	if err := config.DB.Where("first_name = ? AND last_name = ? AND company_id = ? AND tenant_id = ?",
 		data.firstName, data.lastName, companyID, tenantID).First(&existingContact).Error; err == nil {
 		log.Printf("Contact already exists: %s %s", data.firstName, data.lastName)
 		return
@@ -314,13 +324,13 @@ func createContact(data ContactData, companyID string, leadStatuses []models.Lea
 	leadStatus := leadStatuses[rand.Intn(len(leadStatuses))]
 
 	contact := models.Contact{
-		ID:        uuid.New().String(),
-		FirstName: data.firstName,
-		LastName:  data.lastName,
-		Title:     &data.title,
+		ID:         uuid.New().String(),
+		FirstName:  data.firstName,
+		LastName:   data.lastName,
+		Title:      &data.title,
 		Department: &data.department,
-		CompanyID: &companyID,
-		TenantID:  tenantID,
+		CompanyID:  &companyID,
+		TenantID:   tenantID,
 	}
 
 	if err := config.DB.Create(&contact).Error; err != nil {
