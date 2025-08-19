@@ -9,45 +9,33 @@ import {
   ChevronUpIcon
 } from '@heroicons/react/24/outline'
 import { LockClosedIcon } from '@heroicons/react/24/solid'
-import { CreateCompanyModal } from '@/components/companies/create-company-modal'
+import { BuildingOfficeIcon, GlobeAltIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline'
+import { ColumnManager } from '@/components/ui/column-manager'
+import { AddColumnModal } from '@/components/ui/add-column-modal'
 
 interface Company {
   id: string
   name: string
-  website?: string
   domain?: string
-  revenue?: number
-  industry?: {
-    name: string
-    code: string
-  }
-  size?: {
-    name: string
-    code: string
-  }
-  emailAddresses?: Array<{ email: string; isPrimary: boolean }>
-  phoneNumbers?: Array<{ number: string; isPrimary: boolean }>
-  addresses?: Array<{
-    street1?: string
-    city?: string
-    state?: string
-    postalCode?: string
-    country?: string
-  }>
-  ownerContact?: {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-  }
-  assignedUser?: {
-    id: string
-    firstName: string
-    lastName: string
-    email: string
-  }
+  industry?: string
+  size?: string
+  phone?: string
+  email?: string
+  status?: string
   createdAt: string
   updatedAt: string
+  [key: string]: any // For custom fields
+}
+
+interface Column {
+  id: string
+  label: string
+  key: string
+  width: string
+  sortable: boolean
+  locked: boolean
+  removable: boolean
+  type?: string
 }
 
 interface CompaniesResponse {
@@ -78,14 +66,26 @@ export default function CompaniesPage() {
     key: null,
     direction: 'asc'
   })
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isAddColumnModalOpen, setIsAddColumnModalOpen] = useState(false)
+  
+  // Column configuration
+  const [columns, setColumns] = useState<Column[]>([
+    { id: 'checkbox', label: '', key: 'checkbox', width: 'w-16', sortable: false, locked: true, removable: false },
+    { id: 'name', label: 'COMPANY NAME', key: 'name', width: 'w-64', sortable: true, locked: false, removable: false },
+    { id: 'domain', label: 'DOMAIN', key: 'domain', width: 'w-48', sortable: true, locked: false, removable: false },
+    { id: 'industry', label: 'INDUSTRY', key: 'industry', width: 'w-48', sortable: true, locked: false, removable: false },
+    { id: 'size', label: 'SIZE', key: 'size', width: 'w-40', sortable: true, locked: false, removable: false },
+    { id: 'contact', label: 'CONTACT INFO', key: 'contact', width: 'w-64', sortable: true, locked: false, removable: false },
+    { id: 'status', label: 'STATUS', key: 'status', width: 'w-40', sortable: true, locked: false, removable: false },
+    { id: 'createdAt', label: 'CREATION DATE', key: 'createdAt', width: 'w-80', sortable: true, locked: false, removable: false }
+  ])
 
   // Fetch all companies for search functionality
   useEffect(() => {
     const loadInitialData = async () => {
       setLoading(true)
       await fetchAllCompanies()
-      // Note: setLoading(false) is now handled within fetchAllCompanies
+      setLoading(false)
     }
     loadInitialData()
   }, [])
@@ -109,7 +109,6 @@ export default function CompaniesPage() {
       
       if (!token) {
         console.error('No authentication token found')
-        setLoading(false)
         return
       }
 
@@ -121,24 +120,14 @@ export default function CompaniesPage() {
       })
 
       if (!response.ok) {
-        if (response.status === 401) {
-          console.error('Authentication failed - token may be expired')
-          // Clear invalid token
-          localStorage.removeItem('token')
-          // Redirect to login will be handled by ProtectedRoute
-          return
-        }
         console.error('Failed to fetch all companies for search')
-        setLoading(false)
         return
       }
 
       const data: CompaniesResponse = await response.json()
       setAllCompanies(data.data)
-      setLoading(false)
     } catch (err) {
       console.error('Error fetching all companies for search:', err)
-      setLoading(false)
     }
   }
 
@@ -159,61 +148,15 @@ export default function CompaniesPage() {
     )
   }
 
-  const getCompanyName = (company: Company) => {
-    return company.name || '--'
-  }
-
-  const getCompanyEmail = (company: Company) => {
-    const primaryEmail = company.emailAddresses?.find(email => email.isPrimary)
-    return primaryEmail?.email || '--'
-  }
-
-  const getCompanyPhone = (company: Company) => {
-    const primaryPhone = company.phoneNumbers?.find(phone => phone.isPrimary)
-    return primaryPhone?.number || '--'
-  }
-
-  const getCompanyWebsite = (company: Company) => {
-    return company.website || company.domain || '--'
-  }
-
-  const getCompanyIndustry = (company: Company) => {
-    return company.industry?.name || '--'
-  }
-
-  const getCompanySize = (company: Company) => {
-    return company.size?.name || '--'
-  }
-
-  const getCompanyOwner = (company: Company) => {
-    if (company.ownerContact) {
-      return `${company.ownerContact.firstName} ${company.ownerContact.lastName}`
-    }
-    return 'No owner'
-  }
-
-  const getCompanyCity = (company: Company) => {
-    const primaryAddress = company.addresses?.[0]
-    return primaryAddress?.city || '--'
-  }
-
-  const getCompanyCountry = (company: Company) => {
-    const primaryAddress = company.addresses?.[0]
-    return primaryAddress?.country || '--'
+  const getCompanyContact = (company: Company) => {
+    const contactInfo = []
+    if (company.phone) contactInfo.push(company.phone)
+    if (company.email) contactInfo.push(company.email)
+    return contactInfo.join(' • ') || '--'
   }
 
   const getCompanyAvatar = (company: Company) => {
-    const name = getCompanyName(company)
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-  }
-
-  const formatRevenue = (revenue: number) => {
-    if (revenue >= 1000000) {
-      return `$${(revenue / 1000000).toFixed(1)}M`
-    } else if (revenue >= 1000) {
-      return `$${(revenue / 1000).toFixed(1)}K`
-    }
-    return `$${revenue.toLocaleString()}`
+    return company.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
   }
 
   const handleSort = (key: string) => {
@@ -235,21 +178,17 @@ export default function CompaniesPage() {
     const query = searchQuery.toLowerCase().trim()
     
     return companies.filter(company => {
-      const name = getCompanyName(company).toLowerCase()
-      const email = getCompanyEmail(company).toLowerCase()
-      const phone = getCompanyPhone(company).toLowerCase()
-      const website = getCompanyWebsite(company).toLowerCase()
-      const industry = getCompanyIndustry(company).toLowerCase()
-      const city = getCompanyCity(company).toLowerCase()
-      const country = getCompanyCountry(company).toLowerCase()
+      const name = company.name.toLowerCase()
+      const domain = (company.domain || '').toLowerCase()
+      const industry = (company.industry || '').toLowerCase()
+      const phone = (company.phone || '').toLowerCase()
+      const email = (company.email || '').toLowerCase()
       
       return name.includes(query) || 
-             email.includes(query) || 
-             phone.includes(query) ||
-             website.includes(query) ||
+             domain.includes(query) || 
              industry.includes(query) ||
-             city.includes(query) ||
-             country.includes(query)
+             phone.includes(query) ||
+             email.includes(query)
     })
   }
 
@@ -263,50 +202,30 @@ export default function CompaniesPage() {
 
       switch (sortConfig.key) {
         case 'name':
-          aValue = getCompanyName(a).toLowerCase()
-          bValue = getCompanyName(b).toLowerCase()
+          aValue = a.name.toLowerCase()
+          bValue = b.name.toLowerCase()
           break
-        case 'email':
-          aValue = getCompanyEmail(a).toLowerCase()
-          bValue = getCompanyEmail(b).toLowerCase()
-          break
-        case 'phone':
-          aValue = getCompanyPhone(a).toLowerCase()
-          bValue = getCompanyPhone(b).toLowerCase()
-          break
-        case 'website':
-          aValue = getCompanyWebsite(a).toLowerCase()
-          bValue = getCompanyWebsite(b).toLowerCase()
+        case 'domain':
+          aValue = (a.domain || '').toLowerCase()
+          bValue = (b.domain || '').toLowerCase()
           break
         case 'industry':
-          aValue = getCompanyIndustry(a).toLowerCase()
-          bValue = getCompanyIndustry(b).toLowerCase()
+          aValue = (a.industry || '').toLowerCase()
+          bValue = (b.industry || '').toLowerCase()
           break
         case 'size':
-          aValue = getCompanySize(a).toLowerCase()
-          bValue = getCompanySize(b).toLowerCase()
+          aValue = (a.size || '').toLowerCase()
+          bValue = (b.size || '').toLowerCase()
           break
-        case 'owner':
-          aValue = getCompanyOwner(a).toLowerCase()
-          bValue = getCompanyOwner(b).toLowerCase()
+        case 'contact':
+          aValue = getCompanyContact(a).toLowerCase()
+          bValue = getCompanyContact(b).toLowerCase()
           break
-        case 'revenue':
-          aValue = a.revenue || 0
-          bValue = b.revenue || 0
+        case 'status':
+          aValue = (a.status || '').toLowerCase()
+          bValue = (b.status || '').toLowerCase()
           break
-        case 'lastActivity':
-          aValue = new Date(a.updatedAt).getTime()
-          bValue = new Date(b.updatedAt).getTime()
-          break
-        case 'city':
-          aValue = getCompanyCity(a).toLowerCase()
-          bValue = getCompanyCity(b).toLowerCase()
-          break
-        case 'country':
-          aValue = getCompanyCountry(a).toLowerCase()
-          bValue = getCompanyCountry(b).toLowerCase()
-          break
-        case 'createDate':
+        case 'createdAt':
           aValue = new Date(a.createdAt).getTime()
           bValue = new Date(b.createdAt).getTime()
           break
@@ -362,10 +281,89 @@ export default function CompaniesPage() {
     })
   }
 
-  const handleCreateCompanySuccess = () => {
-    setIsCreateModalOpen(false)
-    // Refresh the companies data
-    fetchAllCompanies()
+  // Column management functions
+  const handleColumnSort = (key: string, direction: 'asc' | 'desc') => {
+    setSortConfig({ key, direction })
+  }
+
+  const handleMoveColumn = (columnId: string, direction: 'left' | 'right') => {
+    setColumns(prev => {
+      const currentIndex = prev.findIndex(col => col.id === columnId)
+      if (currentIndex === -1) return prev
+
+      const newColumns = [...prev]
+      const targetIndex = direction === 'left' ? currentIndex - 1 : currentIndex + 1
+
+      // Check bounds
+      if (targetIndex < 0 || targetIndex >= newColumns.length) return prev
+
+      // Check if target column is locked
+      if (newColumns[targetIndex].locked) return prev
+
+      // Swap columns
+      [newColumns[currentIndex], newColumns[targetIndex]] = [newColumns[targetIndex], newColumns[currentIndex]]
+
+      return newColumns
+    })
+  }
+
+  const handleColumnLock = (columnId: string, locked: boolean) => {
+    setColumns(prev => prev.map(col => 
+      col.id === columnId ? { ...col, locked } : col
+    ))
+  }
+
+  const handleColumnDelete = (columnId: string) => {
+    setColumns(prev => prev.filter(col => col.id !== columnId))
+  }
+
+  const handleAddColumn = (position: 'before' | 'after', referenceColumnId: string) => {
+    setIsAddColumnModalOpen(true)
+  }
+
+  const handleAddCustomColumn = (columnData: {
+    id: string
+    label: string
+    key: string
+    width: string
+    type: string
+  }) => {
+    const newColumn: Column = {
+      id: columnData.id,
+      label: columnData.label,
+      key: columnData.key,
+      width: columnData.width,
+      sortable: true,
+      locked: false,
+      removable: true,
+      type: columnData.type
+    }
+    
+    setColumns(prev => [...prev, newColumn])
+  }
+
+  const getColumnValue = (company: Company, columnKey: string) => {
+    switch (columnKey) {
+      case 'name':
+        return company.name
+      case 'domain':
+        return company.domain || '--'
+      case 'industry':
+        return company.industry || '--'
+      case 'size':
+        return company.size || '--'
+      case 'contact':
+        return getCompanyContact(company)
+      case 'status':
+        if (company.status) {
+          return `<span class="status-badge status-active">${company.status}</span>`
+        }
+        return `<span class="status-badge status-default">Active</span>`
+      case 'createdAt':
+        return formatDate(company.createdAt)
+      default:
+        return company[columnKey] || '--'
+    }
   }
 
   if (loading) {
@@ -381,10 +379,10 @@ export default function CompaniesPage() {
   }
 
   return (
-    <div className="bg-white">
-      <div className="w-full">
+    <div className="bg-white h-full">
+      <div className="w-full h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 px-6 pt-6">
           <div className="flex items-center space-x-2">
             <h1 className="text-2xl font-semibold text-gray-900">Companies</h1>
           </div>
@@ -400,17 +398,14 @@ export default function CompaniesPage() {
             <button className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
               Import
             </button>
-            <button 
-              onClick={() => setIsCreateModalOpen(true)}
-              className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600"
-            >
+            <button className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600">
               Create company
             </button>
           </div>
         </div>
 
         {/* Search, Filters, and Actions */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 px-6">
           {/* Left side - Search and Filters */}
           <div className="flex items-center space-x-4">
             {/* Search Bar */}
@@ -418,7 +413,7 @@ export default function CompaniesPage() {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search name, phone, email, website, city, country"
+                placeholder="Q Search name, domain, industry"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -443,9 +438,6 @@ export default function CompaniesPage() {
                 <option value="">All owners</option>
                 <option value="7ed98e09-6460-49aa-8f9e-6efbe9ebffb7">Ted Tse</option>
                 <option value="0f4062f4-cde1-4a4e-83e4-2be22f02368b">Admin User</option>
-                <option value="b202f2a9-13fe-41f1-be43-df14aa2001e0">Test User</option>
-                <option value="8b531e80-6526-4d0c-93ce-db70cc2366ea">Theodore Tse</option>
-                <option value="ba774a5b-22b2-4766-b985-97548b2380dc">Admin User (example.com)</option>
               </select>
               <PlusIcon className="h-4 w-4 text-gray-400" />
             </div>
@@ -462,12 +454,18 @@ export default function CompaniesPage() {
               })()}
             </span>
             <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Export</button>
-            <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Edit columns</button>
+            <button 
+              onClick={() => setIsAddColumnModalOpen(true)}
+              className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              Add column
+            </button>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="w-full">
+        {/* Table with horizontal scrolling support */}
+        <div className="px-6 mb-6 flex-1">
+          <div className="w-full overflow-x-auto shadow-sm border border-gray-200 rounded-lg relative table-scroll-container">
           {getPaginatedCompanies().length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500 text-lg mb-2">
@@ -483,316 +481,138 @@ export default function CompaniesPage() {
               )}
             </div>
           ) : (
-            <table className="w-full table-fixed">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <table className="w-full min-w-[2000px] table-fixed companies-table">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="w-12 px-4 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={selectedCompanies.length === getFilteredCompanies().length && getFilteredCompanies().length > 0}
-                    onChange={handleSelectAll}
-                    className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                </th>
-                <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('name')}
-                  >
-                    <span>COMPANY NAME</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'name' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
+                {columns.map((column, index) => (
+                  <th key={column.id} className={`${column.width} px-4 py-3 text-left`}>
+                    {column.key === 'checkbox' ? (
+                      <input
+                        type="checkbox"
+                        checked={selectedCompanies.length === getFilteredCompanies().length && getFilteredCompanies().length > 0}
+                        onChange={handleSelectAll}
+                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                       />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'name' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-44 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('email')}
-                  >
-                    <span>EMAIL</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'email' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'email' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('phone')}
-                  >
-                    <span>PHONE NUMBER</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'phone' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'phone' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('owner')}
-                  >
-                    <span>COMPANY OWNER</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'owner' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'owner' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-36 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('website')}
-                  >
-                    <span>WEBSITE</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'website' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'website' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('city')}
-                  >
-                    <span>CITY</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'city' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'city' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('country')}
-                  >
-                    <span>COUNTRY</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'country' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'country' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('createDate')}
-                  >
-                    <span>CREATE DATE</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'createDate' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'createDate' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('lastActivity')}
-                  >
-                    <span>LAST ACTIVITY DATE (GMT+8)</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'lastActivity' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'lastActivity' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center space-x-1">
-                    <span>INDUSTRY</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon className="h-3 w-3" />
-                      <ChevronDownIcon className="h-3 w-3" />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </div>
-                </th>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <button 
+                          className="flex items-center space-x-1 hover:text-gray-700"
+                          onClick={() => column.sortable && handleSort(column.key)}
+                          disabled={!column.sortable}
+                        >
+                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            {column.label}
+                          </span>
+                          {column.locked && (
+                            <LockClosedIcon className="h-3 w-3 text-gray-400" />
+                          )}
+                          {column.sortable && (
+                            <div className="flex flex-col">
+                              <ChevronUpIcon 
+                                className={`h-3 w-3 ${
+                                  sortConfig.key === column.key && sortConfig.direction === 'asc' 
+                                    ? 'text-orange-500' 
+                                    : 'text-gray-400'
+                                }`} 
+                              />
+                              <ChevronDownIcon 
+                                className={`h-3 w-3 ${
+                                  sortConfig.key === column.key && sortConfig.direction === 'desc' 
+                                    ? 'text-orange-500' 
+                                    : 'text-gray-400'
+                                }`} 
+                              />
+                            </div>
+                          )}
+                        </button>
+                        <ColumnManager
+                          column={column}
+                          onSort={handleColumnSort}
+                          onLock={handleColumnLock}
+                          onDelete={handleColumnDelete}
+                          onAddColumn={handleAddColumn}
+                          onMoveColumn={handleMoveColumn}
+                          currentSortKey={sortConfig.key}
+                          currentSortDirection={sortConfig.direction}
+                          position={index}
+                          totalColumns={columns.length}
+                        />
+                      </div>
+                    )}
+                  </th>
+                ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white">
               {getPaginatedCompanies().map((company) => (
-                <tr key={company.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedCompanies.includes(company.id)}
-                      onChange={() => handleSelectCompany(company.id)}
-                      className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                    />
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700">
-                        {getCompanyAvatar(company)}
-                      </div>
-                      <span className="text-sm font-medium text-gray-900 truncate">{getCompanyName(company)}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyEmail(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyPhone(company)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span className="text-xs text-gray-600">👤</span>
-                      </div>
-                      <span className="text-sm text-gray-900 truncate">{getCompanyOwner(company)}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-5 h-5 rounded bg-gray-300 flex items-center justify-center">
-                        <span className="text-xs text-gray-600">🌐</span>
-                      </div>
-                      <span className="text-sm text-gray-900 truncate">{getCompanyWebsite(company)}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyCity(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyCountry(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{formatDate(company.createdAt)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{formatDate(company.updatedAt)}</td>
-                  <td className="px-4 py-3">
-                    {getCompanyIndustry(company) !== '--' ? (
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 truncate">
-                        {getCompanyIndustry(company)}
-                      </span>
-                    ) : (
-                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
-                        --
-                      </span>
-                    )}
-                  </td>
+                <tr key={company.id}>
+                  {columns.map((column) => (
+                    <td key={column.id} className={`${column.width} px-4 py-3 text-sm text-gray-900`}>
+                      {column.key === 'checkbox' ? (
+                        <input
+                          type="checkbox"
+                          checked={selectedCompanies.includes(company.id)}
+                          onChange={() => handleSelectCompany(company.id)}
+                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        />
+                      ) : column.key === 'name' ? (
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700 flex-shrink-0">
+                            {getCompanyAvatar(company)}
+                          </div>
+                          <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                            <span className="text-sm font-medium text-gray-900">{getColumnValue(company, column.key)}</span>
+                          </div>
+                        </div>
+                      ) : column.key === 'domain' ? (
+                        <div className="flex items-center space-x-2">
+                          <GlobeAltIcon className="h-4 w-4 text-gray-400" />
+                          <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                            <span className="text-sm text-gray-900">{getColumnValue(company, column.key)}</span>
+                          </div>
+                        </div>
+                      ) : column.key === 'contact' ? (
+                        <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                          <div className="space-y-1">
+                            {company.phone && (
+                              <div className="flex items-center space-x-1">
+                                <PhoneIcon className="h-3 w-3 text-gray-400" />
+                                <span className="text-sm text-gray-900">{company.phone}</span>
+                              </div>
+                            )}
+                            {company.email && (
+                              <div className="flex items-center space-x-1">
+                                <EnvelopeIcon className="h-3 w-3 text-gray-400" />
+                                <span className="text-sm text-gray-900">{company.email}</span>
+                              </div>
+                            )}
+                            {!company.phone && !company.email && (
+                              <span className="text-sm text-gray-500">--</span>
+                            )}
+                          </div>
+                        </div>
+                      ) : column.key === 'status' ? (
+                        <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                          <div dangerouslySetInnerHTML={{ __html: getColumnValue(company, column.key) }} />
+                        </div>
+                      ) : (
+                        <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                          {getColumnValue(company, column.key)}
+                        </div>
+                      )}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
           </table>
           )}
+          </div>
         </div>
 
         {/* Pagination */}
         {getPaginatedCompanies().length > 0 && (
-          <div className="flex items-center justify-center space-x-2 mt-12 pt-6">
+          <div className="flex items-center justify-center space-x-2 mt-2 pt-6 px-6 pb-6">
           {(() => {
             const paginationInfo = getPaginationInfo()
             
@@ -860,7 +680,7 @@ export default function CompaniesPage() {
                           key={pageNum}
                           className={`px-2 py-1 text-sm font-medium rounded ${
                             pageNum === currentPage
-                              ? 'text-black font-semibold' // Current page - black and bold
+                              ? 'text-orange-600 font-semibold' // Current page - orange and bold
                               : 'text-blue-600 hover:text-blue-800' // Other pages - blue
                           }`}
                           onClick={() => setPagination(prev => ({ ...prev, page: pageNum as number }))}
@@ -891,11 +711,11 @@ export default function CompaniesPage() {
         )}
       </div>
 
-      {/* Create Company Modal */}
-      <CreateCompanyModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleCreateCompanySuccess}
+      {/* Add Column Modal */}
+      <AddColumnModal
+        isOpen={isAddColumnModalOpen}
+        onClose={() => setIsAddColumnModalOpen(false)}
+        onAddColumn={handleAddCustomColumn}
       />
     </div>
   )

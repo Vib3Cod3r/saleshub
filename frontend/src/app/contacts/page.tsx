@@ -559,7 +559,8 @@ export default function ContactsPage() {
         </div>
 
         {/* Table with horizontal scrolling support */}
-        <div className="w-full overflow-x-auto shadow-sm border border-gray-200 rounded-lg relative table-scroll-container mx-6 mb-6 flex-1">
+        <div className="px-6 mb-6 flex-1">
+          <div className="w-full overflow-x-auto shadow-sm border border-gray-200 rounded-lg relative table-scroll-container">
           {getPaginatedContacts().length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500 text-lg mb-2">
@@ -692,6 +693,7 @@ export default function ContactsPage() {
             </tbody>
           </table>
           )}
+          </div>
         </div>
 
         {/* Pagination */}

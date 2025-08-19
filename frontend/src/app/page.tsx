@@ -37,28 +37,36 @@ export default function DashboardPage() {
     }
   }, [user, loading, router])
 
-  const { data: companiesData } = useQuery({
+  const { data: companiesData, error: companiesError } = useQuery({
     queryKey: ['companies', { limit: 5 }],
     queryFn: () => apiClient.crm.companies(5),
     enabled: !!user,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  const { data: contactsData } = useQuery({
+  const { data: contactsData, error: contactsError } = useQuery({
     queryKey: ['contacts', { limit: 5 }],
     queryFn: () => apiClient.crm.contacts(5),
     enabled: !!user,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  const { data: leadsData } = useQuery({
+  const { data: leadsData, error: leadsError } = useQuery({
     queryKey: ['leads', { limit: 5 }],
     queryFn: () => apiClient.crm.leads(5),
     enabled: !!user,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  const { data: dealsData } = useQuery({
+  const { data: dealsData, error: dealsError } = useQuery({
     queryKey: ['deals', { limit: 5 }],
     queryFn: () => apiClient.crm.deals(5),
     enabled: !!user,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
   if (loading) {
@@ -71,6 +79,12 @@ export default function DashboardPage() {
 
   if (!user) {
     return null
+  }
+
+  // Handle API errors gracefully
+  const hasErrors = companiesError || contactsError || leadsError || dealsError
+  if (hasErrors) {
+    console.error('API Errors:', { companiesError, contactsError, leadsError, dealsError })
   }
 
   const stats = [

@@ -353,6 +353,45 @@ class AIMistakeLogger {
   }
 
   /**
+   * Log a build error mistake
+   */
+  logBuildError(
+    file: string,
+    lineNumber: number,
+    error: string,
+    userQuery?: string,
+    codeGenerated?: string
+  ): string {
+    return this.log(
+      'code-generation',
+      'high',
+      `Build Error: ${error}`,
+      `Build failed due to ${error} in ${file} at line ${lineNumber}`,
+      {
+        file,
+        lineNumber,
+        userQuery,
+        codeGenerated,
+        expectedBehavior: 'Code should compile without syntax errors',
+        actualBehavior: `Build fails with "${error}"`
+      },
+      {
+        developmentTime: 'Blocks development progress',
+        codeQuality: 'Prevents code from running',
+        userExperience: 'User cannot access the page'
+      },
+      'Fix the syntax error in the specified file',
+      [
+        'Use proper syntax highlighting in editor',
+        'Run linter before committing',
+        'Test build process regularly',
+        'Use TypeScript strict mode'
+      ],
+      ['build-error', 'syntax-error', 'compilation-error']
+    )
+  }
+
+  /**
    * Find similar mistakes to detect repeats
    */
   private findSimilarMistake(title: string, description: string): AIMistakeLog | null {
@@ -823,3 +862,12 @@ export const addAILearningPoints = (mistakeId: string, learningPoints: string[])
 export const getAIMistakeInsights = () => aiMistakeLogger.getInsights()
 
 export const getAILearningSummary = () => aiMistakeLogger.getLearningSummary()
+
+// Log the current build error
+aiMistakeLogger.logBuildError(
+  './src/app/companies/page.tsx',
+  223,
+  'Unterminated regexp literal',
+  'User tried to connect to the companies page',
+  'Companies page component with potential syntax error'
+)

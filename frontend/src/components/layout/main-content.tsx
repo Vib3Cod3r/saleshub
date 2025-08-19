@@ -58,7 +58,7 @@ export function MainContent({ children }: MainContentProps) {
           <div className="lg:pl-16 flex flex-col h-screen" style={{ paddingLeft: '64px' }}>
             <Header onMenuClick={() => setSidebarOpen(true)} />
             
-            <div className="flex-1 bg-white overflow-hidden rounded-tl-4xl">
+            <div className="flex-1 bg-white overflow-hidden" style={{ borderTopLeftRadius: '16px' }}>
               <main className="py-0">
                 <div className="px-0">
                   {children}

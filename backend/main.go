@@ -5,11 +5,12 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 	"saleshub-backend/config"
 	"saleshub-backend/handlers"
 	"saleshub-backend/middleware"
+
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 
 	// Initialize database
 	config.InitDatabase()
-	
+
 	// Skip problematic migrations for now and just seed the database
 	// The database already exists with the correct schema
 	config.SeedDatabase()
@@ -36,11 +37,15 @@ func main() {
 
 	// Create router
 	r := gin.New()
-	
+
+	// Initialize error tracker
+	middleware.InitGlobalErrorTracker(nil)
+
 	// Use middleware
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middleware.CustomCORS())
+	r.Use(middleware.ErrorTrackerMiddleware(middleware.GetGlobalErrorTracker()))
 
 	// Health check
 	r.GET("/health", func(c *gin.Context) {
@@ -50,6 +55,12 @@ func main() {
 			"port":    port,
 		})
 	})
+
+	// Error tracker routes
+	r.GET("/api/error-tracker/data", handlers.GetErrorTrackerData)
+	r.GET("/api/error-tracker/health", handlers.GetErrorTrackerHealth)
+	r.DELETE("/api/error-tracker/data", handlers.ClearErrorTrackerData)
+	r.GET("/api/error-tracker/rules", handlers.GetErrorPreventionRules)
 
 	// API routes
 	api := r.Group("/api")

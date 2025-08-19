@@ -15,9 +15,10 @@ export const metadata: Metadata = {
 }
 
 // Set up global error interceptor on client side
-if (typeof window !== 'undefined') {
-  setupGlobalErrorInterceptor()
-}
+// Temporarily disabled to debug 500 error
+// if (typeof window !== 'undefined') {
+//   setupGlobalErrorInterceptor()
+// }
 
 export default function RootLayout({
   children,

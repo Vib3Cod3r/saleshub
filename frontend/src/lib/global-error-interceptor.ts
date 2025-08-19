@@ -2,7 +2,7 @@
  * Global Error Interceptor - Catches and logs all console errors for Cursor analysis
  */
 
-import { logCompaniesError, logRegistryError, logHookError } from './cursor-error-tracker'
+import { logInternalServer, logReact, logNetwork } from './error-logger'
 
 // Store original console methods
 const originalConsoleError = console.error
@@ -32,14 +32,30 @@ function interceptConsoleError(...args: any[]) {
     
     // Log based on context
     if (context.type === 'registry') {
-      logRegistryError(error || message, context.hook, context.action)
+      logInternalServer(`Registry error in ${context.hook}: ${message}`, {
+        hook: context.hook,
+        action: context.action,
+        error: error?.message || message
+      }, error?.stack)
     } else if (context.type === 'hook') {
-      logHookError(error || message, context.hook, context.component)
+      logReact(`Hook error in ${context.hook}: ${message}`, {
+        hook: context.hook,
+        component: context.component,
+        error: error?.message || message
+      }, error?.stack)
     } else if (context.type === 'companies') {
-      logCompaniesError(error || message, context.component, context.action)
+      logInternalServer(`Companies page error in ${context.component}: ${message}`, {
+        component: context.component,
+        action: context.action,
+        error: error?.message || message
+      }, error?.stack)
     } else {
       // General error logging
-      logCompaniesError(error || message, context.component, context.action)
+      logInternalServer(`General error in ${context.component}: ${message}`, {
+        component: context.component,
+        action: context.action,
+        error: error?.message || message
+      }, error?.stack)
     }
     
   } catch {
@@ -116,13 +132,29 @@ export function setupGlobalErrorInterceptor() {
       const context = analyzeErrorContext(event.message, event.error?.stack || '')
       
       if (context.type === 'registry') {
-        logRegistryError(event.error || event.message, context.hook, context.action)
+        logInternalServer(`Registry error in ${context.hook}: ${event.message}`, {
+          hook: context.hook,
+          action: context.action,
+          error: event.error?.message || event.message
+        }, event.error?.stack)
       } else if (context.type === 'hook') {
-        logHookError(event.error || event.message, context.hook, context.component)
+        logReact(`Hook error in ${context.hook}: ${event.message}`, {
+          hook: context.hook,
+          component: context.component,
+          error: event.error?.message || event.message
+        }, event.error?.stack)
       } else if (context.type === 'companies') {
-        logCompaniesError(event.error || event.message, context.component, context.action)
+        logInternalServer(`Companies page error in ${context.component}: ${event.message}`, {
+          component: context.component,
+          action: context.action,
+          error: event.error?.message || event.message
+        }, event.error?.stack)
       } else {
-        logCompaniesError(event.error || event.message, context.component, context.action)
+        logInternalServer(`General error in ${context.component}: ${event.message}`, {
+          component: context.component,
+          action: context.action,
+          error: event.error?.message || event.message
+        }, event.error?.stack)
       }
     } catch (interceptError) {
       originalConsoleError('Error in global error handler:', interceptError)
@@ -142,13 +174,29 @@ export function setupGlobalErrorInterceptor() {
       const context = analyzeErrorContext(error.message, error.stack || '')
       
       if (context.type === 'registry') {
-        logRegistryError(error, context.hook, context.action)
+        logInternalServer(`Registry error in ${context.hook}: ${error.message}`, {
+          hook: context.hook,
+          action: context.action,
+          error: error.message
+        }, error.stack)
       } else if (context.type === 'hook') {
-        logHookError(error, context.hook, context.component)
+        logReact(`Hook error in ${context.hook}: ${error.message}`, {
+          hook: context.hook,
+          component: context.component,
+          error: error.message
+        }, error.stack)
       } else if (context.type === 'companies') {
-        logCompaniesError(error, context.component, context.action)
+        logInternalServer(`Companies page error in ${context.component}: ${error.message}`, {
+          component: context.component,
+          action: context.action,
+          error: error.message
+        }, error.stack)
       } else {
-        logCompaniesError(error, context.component, context.action)
+        logInternalServer(`General error in ${context.component}: ${error.message}`, {
+          component: context.component,
+          action: context.action,
+          error: error.message
+        }, error.stack)
       }
     } catch (interceptError) {
       originalConsoleError('Error in unhandled rejection handler:', interceptError)
@@ -159,7 +207,7 @@ export function setupGlobalErrorInterceptor() {
 
   // Log that interceptor is set up
   if (process.env.NODE_ENV === 'development') {
-    originalConsoleError('[CURSOR-ERROR-INTERCEPTOR] Global error interceptor initialized')
+    originalConsoleError('[ERROR-INTERCEPTOR] Global error interceptor initialized')
   }
 }
 
