@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { LockClosedIcon } from '@heroicons/react/24/solid'
 import { BuildingOfficeIcon, GlobeAltIcon, PhoneIcon, EnvelopeIcon } from '@heroicons/react/24/outline'
+import { TriangleUpIcon, TriangleDownIcon } from '@/components/ui/triangle-icons'
 import { ColumnManager } from '@/components/ui/column-manager'
 import { AddColumnModal } from '@/components/ui/add-column-modal'
 
@@ -529,42 +530,44 @@ export default function CompaniesPage() {
                 {columns.map((column, index) => (
                   <th key={`${column.id}-${index}`} className={`${column.width} px-4 py-3 text-left`}>
                     {column.key === 'checkbox' ? (
+                      <div className="flex justify-center">
                       <input
                         type="checkbox"
                         checked={selectedCompanies.length === getFilteredCompanies().length && getFilteredCompanies().length > 0}
                         onChange={handleSelectAll}
                         className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                       />
+                      </div>
                     ) : (
                       <div className="flex items-center justify-between">
                         <button 
-                          className="flex items-center space-x-1 hover:text-gray-700"
+                          className="flex items-center space-x-2 hover:text-gray-700 w-full justify-start"
                           onClick={() => column.sortable && handleSort(column.key)}
                           disabled={!column.sortable}
                         >
+                          {column.sortable && (
+                            <div className="flex flex-col">
+                              <TriangleUpIcon 
+                                className={`h-3 w-3 ${
+                                  sortConfig.key === column.key && sortConfig.direction === 'asc' 
+                                    ? 'text-blue-500' 
+                                    : 'text-gray-400'
+                                }`} 
+                              />
+                              <TriangleDownIcon 
+                                className={`h-3 w-3 ${
+                                  sortConfig.key === column.key && sortConfig.direction === 'desc' 
+                                    ? 'text-blue-500' 
+                                    : 'text-gray-400'
+                                }`} 
+                              />
+                            </div>
+                          )}
                           <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                             {column.label}
                           </span>
                           {column.locked && (
                             <LockClosedIcon className="h-3 w-3 text-gray-400" />
-                          )}
-                          {column.sortable && (
-                            <div className="flex flex-col">
-                              <ChevronUpIcon 
-                                className={`h-3 w-3 ${
-                                  sortConfig.key === column.key && sortConfig.direction === 'asc' 
-                                    ? 'text-orange-500' 
-                                    : 'text-gray-400'
-                                }`} 
-                              />
-                              <ChevronDownIcon 
-                                className={`h-3 w-3 ${
-                                  sortConfig.key === column.key && sortConfig.direction === 'desc' 
-                                    ? 'text-orange-500' 
-                                    : 'text-gray-400'
-                                }`} 
-                              />
-                            </div>
                           )}
                         </button>
                         <ColumnManager
@@ -588,30 +591,33 @@ export default function CompaniesPage() {
                   {columns.map((column, index) => (
                     <td key={`${column.id}-${index}`} className={`${column.width} px-4 py-3 text-sm text-gray-900`}>
                       {column.key === 'checkbox' ? (
+                        <div className="flex justify-center">
                         <input
                           type="checkbox"
                           checked={selectedCompanies.includes(company.id)}
                           onChange={() => handleSelectCompany(company.id)}
                           className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                         />
+                        </div>
                       ) : column.key === 'name' ? (
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700 flex-shrink-0">
+                        <div className="flex items-center">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700 flex-shrink-0 mr-3">
                             {getCompanyAvatar(company)}
                           </div>
-                          <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                          <div className="table-cell-content flex-1" title={getColumnValue(company, column.key)}>
                             <span className="text-sm font-medium text-gray-900">{getColumnValue(company, column.key)}</span>
                           </div>
                         </div>
                       ) : column.key === 'domain' ? (
-                        <div className="flex items-center space-x-2">
-                          <GlobeAltIcon className="h-4 w-4 text-gray-400" />
-                          <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                        <div className="flex items-center">
+                          <GlobeAltIcon className="h-4 w-4 text-gray-400 mr-2" />
+                          <div className="table-cell-content flex-1" title={getColumnValue(company, column.key)}>
                             <span className="text-sm text-gray-900">{getColumnValue(company, column.key)}</span>
                           </div>
                         </div>
                       ) : column.key === 'contact' ? (
-                        <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                        <div className="flex items-center">
+                          <div className="table-cell-content flex-1" title={getColumnValue(company, column.key)}>
                           <div className="space-y-1">
                             {company.phone && (
                               <div className="flex items-center space-x-1">
@@ -628,15 +634,20 @@ export default function CompaniesPage() {
                             {!company.phone && !company.email && (
                               <span className="text-sm text-gray-500">--</span>
                             )}
+                            </div>
                           </div>
                         </div>
                       ) : column.key === 'status' ? (
-                        <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                        <div className="flex items-center">
+                          <div className="table-cell-content flex-1" title={getColumnValue(company, column.key)}>
                           <div dangerouslySetInnerHTML={{ __html: getColumnValue(company, column.key) }} />
+                          </div>
                         </div>
                       ) : (
-                        <div className="table-cell-content" title={getColumnValue(company, column.key)}>
+                        <div className="flex items-center">
+                          <div className="table-cell-content flex-1" title={getColumnValue(company, column.key)}>
                           {getColumnValue(company, column.key)}
+                          </div>
                         </div>
                       )}
                     </td>
