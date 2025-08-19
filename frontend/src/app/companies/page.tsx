@@ -175,6 +175,16 @@ export default function CompaniesPage() {
     return 'No owner'
   }
 
+  const getCompanyCity = (company: Company) => {
+    const primaryAddress = company.addresses?.[0]
+    return primaryAddress?.city || '--'
+  }
+
+  const getCompanyCountry = (company: Company) => {
+    const primaryAddress = company.addresses?.[0]
+    return primaryAddress?.country || '--'
+  }
+
   const getCompanyAvatar = (company: Company) => {
     const name = getCompanyName(company)
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
@@ -210,12 +220,16 @@ export default function CompaniesPage() {
       const phone = getCompanyPhone(company).toLowerCase()
       const website = getCompanyWebsite(company).toLowerCase()
       const industry = getCompanyIndustry(company).toLowerCase()
+      const city = getCompanyCity(company).toLowerCase()
+      const country = getCompanyCountry(company).toLowerCase()
       
       return name.includes(query) || 
              email.includes(query) || 
              phone.includes(query) ||
              website.includes(query) ||
-             industry.includes(query)
+             industry.includes(query) ||
+             city.includes(query) ||
+             country.includes(query)
     })
   }
 
@@ -263,6 +277,18 @@ export default function CompaniesPage() {
         case 'lastActivity':
           aValue = new Date(a.updatedAt).getTime()
           bValue = new Date(b.updatedAt).getTime()
+          break
+        case 'city':
+          aValue = getCompanyCity(a).toLowerCase()
+          bValue = getCompanyCity(b).toLowerCase()
+          break
+        case 'country':
+          aValue = getCompanyCountry(a).toLowerCase()
+          bValue = getCompanyCountry(b).toLowerCase()
+          break
+        case 'createDate':
+          aValue = new Date(a.createdAt).getTime()
+          bValue = new Date(b.createdAt).getTime()
           break
         default:
           return 0
@@ -372,7 +398,7 @@ export default function CompaniesPage() {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search name, phone, email, website"
+                placeholder="Search name, phone, email, website, city, country"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -473,7 +499,7 @@ export default function CompaniesPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="w-64 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-44 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('email')}
@@ -498,7 +524,7 @@ export default function CompaniesPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-32 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('phone')}
@@ -523,107 +549,7 @@ export default function CompaniesPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('website')}
-                  >
-                    <span>WEBSITE</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'website' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'website' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('industry')}
-                  >
-                    <span>INDUSTRY</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'industry' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'industry' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('size')}
-                  >
-                    <span>COMPANY SIZE</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'size' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'size' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <button 
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort('revenue')}
-                  >
-                    <span>REVENUE</span>
-                    <div className="flex flex-col">
-                      <ChevronUpIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'revenue' && sortConfig.direction === 'asc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                      <ChevronDownIcon 
-                        className={`h-3 w-3 ${
-                          sortConfig.key === 'revenue' && sortConfig.direction === 'desc' 
-                            ? 'text-orange-500' 
-                            : 'text-gray-400'
-                        }`} 
-                      />
-                    </div>
-                    <EllipsisHorizontalIcon className="h-4 w-4" />
-                  </button>
-                </th>
-                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('owner')}
@@ -648,7 +574,107 @@ export default function CompaniesPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
-                <th className="w-56 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="w-36 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('website')}
+                  >
+                    <span>WEBSITE</span>
+                    <div className="flex flex-col">
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'website' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'website' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                    </div>
+                    <EllipsisHorizontalIcon className="h-4 w-4" />
+                  </button>
+                </th>
+                <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('city')}
+                  >
+                    <span>CITY</span>
+                    <div className="flex flex-col">
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'city' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'city' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                    </div>
+                    <EllipsisHorizontalIcon className="h-4 w-4" />
+                  </button>
+                </th>
+                <th className="w-28 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('country')}
+                  >
+                    <span>COUNTRY</span>
+                    <div className="flex flex-col">
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'country' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'country' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                    </div>
+                    <EllipsisHorizontalIcon className="h-4 w-4" />
+                  </button>
+                </th>
+                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button 
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort('createDate')}
+                  >
+                    <span>CREATE DATE</span>
+                    <div className="flex flex-col">
+                      <ChevronUpIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'createDate' && sortConfig.direction === 'asc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                      <ChevronDownIcon 
+                        className={`h-3 w-3 ${
+                          sortConfig.key === 'createDate' && sortConfig.direction === 'desc' 
+                            ? 'text-orange-500' 
+                            : 'text-gray-400'
+                        }`} 
+                      />
+                    </div>
+                    <EllipsisHorizontalIcon className="h-4 w-4" />
+                  </button>
+                </th>
+                <th className="w-40 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <button 
                     className="flex items-center space-x-1 hover:text-gray-700"
                     onClick={() => handleSort('lastActivity')}
@@ -673,6 +699,16 @@ export default function CompaniesPage() {
                     <EllipsisHorizontalIcon className="h-4 w-4" />
                   </button>
                 </th>
+                <th className="w-20 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center space-x-1">
+                    <span>INDUSTRY</span>
+                    <div className="flex flex-col">
+                      <ChevronUpIcon className="h-3 w-3" />
+                      <ChevronDownIcon className="h-3 w-3" />
+                    </div>
+                    <EllipsisHorizontalIcon className="h-4 w-4" />
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -691,26 +727,42 @@ export default function CompaniesPage() {
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700">
                         {getCompanyAvatar(company)}
                       </div>
-                      <span className="text-sm font-medium text-gray-900">{getCompanyName(company)}</span>
+                      <span className="text-sm font-medium text-gray-900 truncate">{getCompanyName(company)}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{getCompanyEmail(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{getCompanyPhone(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{getCompanyWebsite(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{getCompanyIndustry(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{getCompanySize(company)}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {company.revenue ? formatRevenue(company.revenue) : '--'}
-                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyEmail(company)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyPhone(company)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center space-x-2">
                       <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
                         <span className="text-xs text-gray-600">👤</span>
                       </div>
-                      <span className="text-sm text-gray-900">{getCompanyOwner(company)}</span>
+                      <span className="text-sm text-gray-900 truncate">{getCompanyOwner(company)}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{formatDate(company.updatedAt)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-5 h-5 rounded bg-gray-300 flex items-center justify-center">
+                        <span className="text-xs text-gray-600">🌐</span>
+                      </div>
+                      <span className="text-sm text-gray-900 truncate">{getCompanyWebsite(company)}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyCity(company)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{getCompanyCountry(company)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{formatDate(company.createdAt)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 truncate">{formatDate(company.updatedAt)}</td>
+                  <td className="px-4 py-3">
+                    {getCompanyIndustry(company) !== '--' ? (
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800 truncate">
+                        {getCompanyIndustry(company)}
+                      </span>
+                    ) : (
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600">
+                        --
+                      </span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
