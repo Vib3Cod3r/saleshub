@@ -167,6 +167,72 @@
     margin: -4px;
   }
 
+  /* Sticky checkbox column styles */
+  .contacts-table thead th:first-child,
+  .contacts-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background-color: #f9fafb;
+    border-right: 2px solid #e5e7eb;
+  }
+
+  .contacts-table tbody td:first-child {
+    background-color: white;
+  }
+
+  .contacts-table tbody tr:nth-child(even) td:first-child {
+    background-color: #fafafa;
+  }
+
+  .contacts-table tbody tr:hover td:first-child {
+    background-color: #f3f4f6;
+  }
+
+  /* Sticky checkbox column styles for companies table */
+  .companies-table thead th:first-child,
+  .companies-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background-color: #f9fafb;
+    border-right: 2px solid #e5e7eb;
+  }
+
+  .companies-table tbody td:first-child {
+    background-color: white;
+  }
+
+  .companies-table tbody tr:nth-child(even) td:first-child {
+    background-color: #fafafa;
+  }
+
+  .companies-table tbody tr:hover td:first-child {
+    background-color: #f3f4f6;
+  }
+
+  /* Sticky checkbox column styles for tasks table */
+  .tasks-table thead th:first-child,
+  .tasks-table tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 20;
+    background-color: #f9fafb;
+    border-right: 2px solid #e5e7eb;
+  }
+
+  .tasks-table tbody td:first-child {
+    background-color: white;
+  }
+
+  .tasks-table tbody tr:nth-child(even) td:first-child {
+    background-color: #fafafa;
+  }
+
+  .tasks-table tbody tr:hover td:first-child {
+    background-color: #f3f4f6;
+  }
+
   /* Ensure table rows stay in single line */
   .contacts-table tbody tr {
     height: 48px;

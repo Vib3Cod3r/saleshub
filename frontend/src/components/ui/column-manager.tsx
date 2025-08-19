@@ -42,6 +42,7 @@ export function ColumnManager({
   totalColumns
 }: ColumnManagerProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 })
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -55,7 +56,49 @@ export function ColumnManager({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  const calculateMenuPosition = () => {
+    if (!menuRef.current) return { top: 0, left: 0 }
 
+    const buttonRect = menuRef.current.getBoundingClientRect()
+    const menuWidth = 224 // w-56 = 14rem = 224px
+    const menuHeight = 280 // Approximate height of the menu
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+
+    // Calculate initial position
+    let left = buttonRect.left
+    let top = buttonRect.bottom + 4
+
+    // Check if menu would go off the right edge
+    if (left + menuWidth > viewportWidth) {
+      left = buttonRect.right - menuWidth
+    }
+
+    // Check if menu would go off the left edge
+    if (left < 0) {
+      left = 8 // Small margin from left edge
+    }
+
+    // Check if menu would go off the bottom edge
+    if (top + menuHeight > viewportHeight) {
+      top = buttonRect.top - menuHeight - 4
+    }
+
+    // Check if menu would go off the top edge
+    if (top < 0) {
+      top = 8 // Small margin from top edge
+    }
+
+    return { top, left }
+  }
+
+  const handleToggleMenu = () => {
+    if (!isOpen) {
+      const position = calculateMenuPosition()
+      setMenuPosition(position)
+    }
+    setIsOpen(!isOpen)
+  }
 
   const handleMoveLeft = () => {
     onMoveColumn(column.id, 'left')
@@ -90,17 +133,20 @@ export function ColumnManager({
   return (
     <div className="relative" ref={menuRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggleMenu}
         className="p-1 hover:bg-gray-100 rounded transition-colors"
       >
         <EllipsisHorizontalIcon className="h-4 w-4 text-gray-400" />
       </button>
 
       {isOpen && (
-        <div className="fixed w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999]" style={{
-          top: menuRef.current?.getBoundingClientRect().bottom + 4,
-          left: menuRef.current?.getBoundingClientRect().left
-        }}>
+        <div 
+          className="fixed w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999]" 
+          style={{
+            top: menuPosition.top,
+            left: menuPosition.left
+          }}
+        >
           <div className="py-1">
             {/* Move Options */}
             <button

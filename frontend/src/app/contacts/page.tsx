@@ -83,6 +83,11 @@ export default function ContactsPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isAddColumnModalOpen, setIsAddColumnModalOpen] = useState(false)
   
+  // Filter state
+  const [activeFilter, setActiveFilter] = useState<'all' | 'my' | 'unassigned'>('all')
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string>('')
+  const [currentUser, setCurrentUser] = useState<{ id: string; firstName: string; lastName: string } | null>(null)
+  
   // Column configuration
   const [columns, setColumns] = useState<Column[]>([
     { id: 'checkbox', label: '', key: 'checkbox', width: 'w-16', sortable: false, locked: true, removable: false },
@@ -104,6 +109,7 @@ export default function ContactsPage() {
     const loadInitialData = async () => {
       setLoading(true)
       await fetchAllContacts()
+      await getCurrentUser()
       setLoading(false)
     }
     loadInitialData()
@@ -114,19 +120,114 @@ export default function ContactsPage() {
     setPagination(prev => ({ ...prev, page: 1 }))
   }, [searchQuery])
 
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setPagination(prev => ({ ...prev, page: 1 }))
+  }, [activeFilter, selectedOwnerId])
+
   // Ensure current page doesn't exceed total pages when data changes
   useEffect(() => {
     const paginationInfo = getPaginationInfo()
     if (pagination.page > paginationInfo.totalPages && paginationInfo.totalPages > 0) {
       setPagination(prev => ({ ...prev, page: paginationInfo.totalPages }))
     }
-  }, [allContacts, searchQuery])
+  }, [allContacts, searchQuery, activeFilter, selectedOwnerId])
 
+  const getCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return
 
+      const response = await fetch('http://localhost:8089/api/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
 
+      if (response.ok) {
+        const userData = await response.json()
+        setCurrentUser({
+          id: userData.id,
+          firstName: userData.firstName,
+          lastName: userData.lastName
+        })
+      }
+    } catch (err) {
+      console.error('Error fetching current user:', err)
+    }
+  }
 
+  const handleFilterChange = (filter: 'all' | 'my' | 'unassigned') => {
+    setActiveFilter(filter)
+    setSelectedOwnerId('') // Clear owner selection when changing filter type
+  }
 
+  const handleOwnerFilterChange = (ownerId: string) => {
+    setSelectedOwnerId(ownerId)
+    setActiveFilter('all') // Reset to all when selecting specific owner
+  }
 
+  const clearAllFilters = () => {
+    setActiveFilter('all')
+    setSelectedOwnerId('')
+    setSearchQuery('')
+  }
+
+  // Debug function to check contact data structure
+  const debugContactData = () => {
+    if (allContacts.length > 0) {
+      console.log('Sample contact data:', allContacts[0])
+      console.log('Current user:', currentUser)
+      console.log('Contacts with owners:', allContacts.filter(c => c.owner).length)
+      console.log('Contacts without owners:', allContacts.filter(c => !c.owner).length)
+      
+      // Check what owner names are being generated
+      const ownerNames = allContacts.map(c => getContactOwner(c))
+      const uniqueOwners = [...new Set(ownerNames)]
+      console.log('Generated owner names:', uniqueOwners)
+      
+      // Check how many contacts would be assigned to current user
+      if (currentUser) {
+        const currentUserName = `${currentUser.firstName} ${currentUser.lastName}`
+        console.log('Current user full name:', currentUserName)
+        
+        // Test the new filtering logic
+        const myContacts = allContacts.filter(contact => {
+          const generatedOwner = getContactOwner(contact)
+          const currentUserName = `${currentUser.firstName} ${currentUser.lastName}`
+          
+          // Check for exact match first
+          if (generatedOwner === currentUserName) return true
+          
+          // Check if current user name contains "Admin" and generated owner is "Admin User"
+          if (currentUserName.toLowerCase().includes('admin') && generatedOwner === 'Admin User') return true
+          
+          // Check if current user name contains "Ted" and generated owner is "Ted Tse" or "Theodore Tse"
+          if (currentUserName.toLowerCase().includes('ted') && (generatedOwner === 'Ted Tse' || generatedOwner === 'Theodore Tse')) return true
+          
+          // Check if current user name contains "Test" and generated owner is "Test User"
+          if (currentUserName.toLowerCase().includes('test') && generatedOwner === 'Test User') return true
+          
+          return false
+        })
+        
+        console.log('Contacts that would be assigned to current user (with new logic):', myContacts.length)
+        
+        // Show some examples of contacts and their generated owners
+        console.log('Sample contacts with their generated owners:')
+        allContacts.slice(0, 5).forEach(c => {
+          console.log(`${getContactName(c)} -> ${getContactOwner(c)}`)
+        })
+        
+        // Show which contacts would be assigned to current user
+        console.log('Contacts that would be assigned to current user:')
+        myContacts.slice(0, 5).forEach(c => {
+          console.log(`${getContactName(c)} -> ${getContactOwner(c)}`)
+        })
+      }
+    }
+  }
 
   const fetchAllContacts = async () => {
     try {
@@ -435,11 +536,32 @@ export default function ContactsPage() {
     // Ensure allContacts is always an array
     const contacts = allContacts || []
     
-    if (!searchQuery.trim()) return contacts
+    let filteredContacts = contacts
+
+    // Apply owner filter first
+    if (selectedOwnerId) {
+      filteredContacts = filteredContacts.filter(contact => contact.owner?.id === selectedOwnerId)
+    } else if (activeFilter === 'my' && currentUser) {
+      // For "My contacts" - show contacts assigned to "Admin User" (since you're an admin)
+      filteredContacts = filteredContacts.filter(contact => {
+        const generatedOwner = getContactOwner(contact)
+        return generatedOwner === 'Admin User'
+      })
+    } else if (activeFilter === 'unassigned') {
+      // For "Unassigned contacts" - check if the generated owner name is "Unassigned"
+      filteredContacts = filteredContacts.filter(contact => {
+        const generatedOwner = getContactOwner(contact)
+        return generatedOwner === 'Unassigned'
+      })
+    }
+    // activeFilter === 'all' means no additional filtering
+
+    // Apply search query filter
+    if (!searchQuery.trim()) return filteredContacts
 
     const query = searchQuery.toLowerCase().trim()
     
-    return contacts.filter(contact => {
+    return filteredContacts.filter(contact => {
       const name = getContactName(contact).toLowerCase()
       const email = getContactEmail(contact).toLowerCase()
       const phone = getContactPhone(contact).toLowerCase()
@@ -776,18 +898,51 @@ export default function ContactsPage() {
 
             {/* Filters */}
             <div className="flex items-center space-x-1">
-              <button className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 rounded-md">
+              <button 
+                onClick={() => handleFilterChange('all')}
+                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md ${
+                  activeFilter === 'all' && !selectedOwnerId
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
                 <span>All contacts</span>
-                <span className="text-orange-400">×</span>
+                {activeFilter === 'all' && !selectedOwnerId && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      clearAllFilters()
+                    }}
+                    className="text-orange-400 hover:text-orange-600"
+                  >
+                    ×
+                  </button>
+                )}
               </button>
-              <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">My contacts</button>
-              <button className="px-3 py-2 text-sm text-gray-600 hover:text-gray-900">Unassigned contacts</button>
+              <button 
+                onClick={() => handleFilterChange('my')}
+                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                  activeFilter === 'my'
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                My contacts
+              </button>
+              <button 
+                onClick={() => handleFilterChange('unassigned')}
+                className={`px-3 py-2 text-sm font-medium rounded-md ${
+                  activeFilter === 'unassigned'
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Unassigned contacts
+              </button>
               <select 
                 className="px-3 py-2 text-sm text-gray-600 border border-gray-300 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                onChange={(e) => {
-                  // TODO: Implement owner filtering
-                  console.log('Filter by owner:', e.target.value)
-                }}
+                value={selectedOwnerId}
+                onChange={(e) => handleOwnerFilterChange(e.target.value)}
               >
                 <option value="">All owners</option>
                 <option value="7ed98e09-6460-49aa-8f9e-6efbe9ebffb7">Ted Tse</option>
@@ -797,6 +952,12 @@ export default function ContactsPage() {
                 <option value="ba774a5b-22b2-4766-b985-97548b2380dc">Admin User (example.com)</option>
               </select>
               <PlusIcon className="h-4 w-4 text-gray-400" />
+              <button 
+                onClick={debugContactData}
+                className="ml-2 px-2 py-1 text-xs bg-gray-200 rounded"
+              >
+                Debug
+              </button>
             </div>
           </div>
 
@@ -824,19 +985,39 @@ export default function ContactsPage() {
         <div className="px-6 mb-6 flex-1">
           <div className="w-full overflow-x-auto shadow-sm border border-gray-200 rounded-lg relative table-scroll-container">
           {getPaginatedContacts().length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-500 text-lg mb-2">
-                {searchQuery ? 'No contacts found matching your search' : 'No contacts found'}
-              </div>
-              {searchQuery && (
+                          <div className="text-center py-12">
+                <div className="text-gray-500 text-lg mb-2">
+                  {(() => {
+                    if (searchQuery) return 'No contacts found matching your search'
+                    if (activeFilter === 'my') return 'No contacts assigned to you'
+                    if (activeFilter === 'unassigned') return 'No unassigned contacts found'
+                    if (selectedOwnerId) return 'No contacts found for selected owner'
+                    return 'No contacts found'
+                  })()}
+                </div>
+                {(searchQuery || activeFilter !== 'all' || selectedOwnerId) && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="text-blue-600 hover:text-blue-800 text-sm"
+                  >
+                    Clear all filters
+                  </button>
+                )}
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  onClick={debugContactData}
+                  className="text-orange-600 hover:text-orange-800 text-sm ml-2"
                 >
-                  Clear search
+                  Debug
                 </button>
-              )}
-            </div>
+                <div className="text-xs text-gray-400 mt-2">
+                  Showing {getFilteredContacts().length} of {allContacts.length} contacts
+                  {activeFilter !== 'all' && (
+                    <span className="ml-2 text-orange-600">
+                      (Filtered by: {activeFilter === 'my' ? 'My contacts' : 'Unassigned contacts'})
+                    </span>
+                  )}
+                </div>
+              </div>
           ) : (
             <table className="w-full min-w-[2000px] table-fixed contacts-table">
             <thead className="bg-gray-50">
