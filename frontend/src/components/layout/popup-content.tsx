@@ -27,13 +27,18 @@ export function PopupContent({ type, onClose }: PopupContentProps) {
           title: 'CRM',
           sections: [
             {
-              title: '',
+              title: 'Core CRM',
               items: [
-                { icon: UserGroupIcon, label: 'Leads', action: 'link', href: '/leads' },
-                { icon: UserGroupIcon, label: 'Contacts', action: 'link', href: '/contacts' },
-                { icon: UserGroupIcon, label: 'Companies', action: 'link', href: '/companies' },
+                { icon: UserGroupIcon, label: 'Contacts', action: 'link', href: '/crm/contacts' },
+                { icon: UserGroupIcon, label: 'Companies', action: 'link', href: '/crm/companies' },
+                { icon: UserGroupIcon, label: 'Leads', action: 'link', href: '/crm/leads' },
+                { icon: ChartBarIcon, label: 'Deals', action: 'link', href: '/crm/deals' },
+              ]
+            },
+            {
+              title: 'Other',
+              items: [
                 { icon: DocumentTextIcon, label: 'Tasks', action: 'link', href: '/tasks' },
-                { icon: ChartBarIcon, label: 'Deals', action: 'link', href: '/deals' },
               ]
             }
           ]

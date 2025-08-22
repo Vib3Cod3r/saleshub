@@ -80,6 +80,13 @@ func main() {
 		crm := api.Group("/crm")
 		crm.Use(middleware.AuthMiddleware())
 		{
+			// Entity system routes
+			entities := crm.Group("/entities")
+			{
+				entities.GET("/:entityType/specification", handlers.GetEntitySpecification)
+				entities.POST("/:entityType/data", handlers.GetEntityData)
+			}
+
 			companies := crm.Group("/companies")
 			{
 				companies.GET("", handlers.GetCompanies)

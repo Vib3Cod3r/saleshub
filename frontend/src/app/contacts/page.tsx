@@ -6,7 +6,9 @@ import {
   ChevronDownIcon, 
   PlusIcon, 
   EllipsisHorizontalIcon,
-  ChevronUpIcon
+  ChevronUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon
 } from '@heroicons/react/24/outline'
 import { LockClosedIcon } from '@heroicons/react/24/solid'
 import { CreateContactModal } from '@/components/contacts/create-contact-modal'
@@ -848,8 +850,7 @@ export default function ContactsPage() {
 
 
   return (
-    <div className="bg-white h-full">
-      <div className="w-full h-full flex flex-col">
+    <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-6 px-6 pt-6">
           <div className="flex items-center space-x-2">
@@ -900,24 +901,13 @@ export default function ContactsPage() {
             <div className="flex items-center space-x-1">
               <button 
                 onClick={() => handleFilterChange('all')}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-3 py-2 text-sm font-medium rounded-md ${
                   activeFilter === 'all' && !selectedOwnerId
                     ? 'text-orange-600 bg-orange-50'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <span>All contacts</span>
-                {activeFilter === 'all' && !selectedOwnerId && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      clearAllFilters()
-                    }}
-                    className="text-orange-400 hover:text-orange-600"
-                  >
-                    ×
-                  </button>
-                )}
+                All contacts
               </button>
               <button 
                 onClick={() => handleFilterChange('my')}
@@ -981,285 +971,201 @@ export default function ContactsPage() {
           </div>
         </div>
 
-        {/* Table with horizontal scrolling support */}
-        <div className="px-6 mb-6 flex-1">
-          <div className="w-full overflow-x-auto shadow-sm border border-gray-200 rounded-lg relative table-scroll-container">
+        {/* Table */}
+        <div className="flex-1 overflow-auto">
           {getPaginatedContacts().length === 0 ? (
-                          <div className="text-center py-12">
-                <div className="text-gray-500 text-lg mb-2">
-                  {(() => {
-                    if (searchQuery) return 'No contacts found matching your search'
-                    if (activeFilter === 'my') return 'No contacts assigned to you'
-                    if (activeFilter === 'unassigned') return 'No unassigned contacts found'
-                    if (selectedOwnerId) return 'No contacts found for selected owner'
-                    return 'No contacts found'
-                  })()}
-                </div>
-                {(searchQuery || activeFilter !== 'all' || selectedOwnerId) && (
-                  <button
-                    onClick={clearAllFilters}
-                    className="text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    Clear all filters
-                  </button>
-                )}
-                <button
-                  onClick={debugContactData}
-                  className="text-orange-600 hover:text-orange-800 text-sm ml-2"
-                >
-                  Debug
-                </button>
-                <div className="text-xs text-gray-400 mt-2">
-                  Showing {getFilteredContacts().length} of {allContacts.length} contacts
-                  {activeFilter !== 'all' && (
-                    <span className="ml-2 text-orange-600">
-                      (Filtered by: {activeFilter === 'my' ? 'My contacts' : 'Unassigned contacts'})
-                    </span>
-                  )}
-                </div>
+            <div className="text-center py-12">
+              <div className="text-gray-500 text-lg mb-2">
+                {(() => {
+                  if (searchQuery) return 'No contacts found matching your search'
+                  if (activeFilter === 'my') return 'No contacts assigned to you'
+                  if (activeFilter === 'unassigned') return 'No unassigned contacts found'
+                  if (selectedOwnerId) return 'No contacts found for selected owner'
+                  return 'No contacts found'
+                })()}
               </div>
+              {(searchQuery || activeFilter !== 'all' || selectedOwnerId) && (
+                <button
+                  onClick={clearAllFilters}
+                  className="text-blue-600 hover:text-blue-800 text-sm"
+                >
+                  Clear all filters
+                </button>
+              )}
+              <button
+                onClick={debugContactData}
+                className="text-orange-600 hover:text-orange-800 text-sm ml-2"
+              >
+                Debug
+              </button>
+              <div className="text-xs text-gray-400 mt-2">
+                Showing {getFilteredContacts().length} of {allContacts.length} contacts
+                {activeFilter !== 'all' && (
+                  <span className="ml-2 text-orange-600">
+                    (Filtered by: {activeFilter === 'my' ? 'My contacts' : 'Unassigned contacts'})
+                  </span>
+                )}
+              </div>
+            </div>
           ) : (
-            <table className="w-full min-w-[2000px] table-fixed contacts-table">
-            <thead className="bg-gray-50">
-              <tr>
-                {columns.map((column, index) => (
-                  <th key={`${column.id}-${index}`} className={`${column.width} px-4 py-3 text-left`}>
-                    {column.key === 'checkbox' ? (
-                      <div className="flex justify-center">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  {columns.map((column, index) => (
+                    <th key={`${column.id}-${index}`} className="px-4 py-3 text-left">
+                      {column.key === 'checkbox' ? (
                         <input
                           type="checkbox"
                           checked={selectedContacts.length === getFilteredContacts().length && getFilteredContacts().length > 0}
                           onChange={handleSelectAll}
                           className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                         />
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <button 
-                          className="flex items-center hover:text-gray-700 w-full justify-start"
-                          onClick={() => column.sortable && handleSort(column.key)}
-                          disabled={!column.sortable}
-                        >
-                          {column.sortable && (
-                            <div className="flex flex-col mr-2 -ml-2">
-                              <TriangleUpIcon 
-                                className={`h-3 w-3 ${
-                                  sortConfig.key === column.key && sortConfig.direction === 'asc' 
-                                    ? 'text-blue-500' 
-                                    : 'text-gray-400'
-                                }`} 
-                              />
-                              <TriangleDownIcon 
-                                className={`h-3 w-3 ${
-                                  sortConfig.key === column.key && sortConfig.direction === 'desc' 
-                                    ? 'text-blue-500' 
-                                    : 'text-gray-400'
-                                }`} 
-                              />
-                            </div>
-                          )}
-                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            {column.label}
-                          </span>
-                          {column.locked && (
-                            <LockClosedIcon className="h-3 w-3 text-gray-400" />
-                          )}
-                        </button>
-                        <div className="ml-4">
-                          <ColumnManager
-                            column={column}
-                            onLock={handleColumnLock}
-                            onDelete={handleColumnDelete}
-                            onAddColumn={handleAddColumn}
-                            onMoveColumn={handleMoveColumn}
-                            position={index}
-                            totalColumns={columns.length}
-                          />
+                      ) : (
+                        <div className="flex items-center space-x-1">
+                          <button 
+                            className="flex items-center hover:text-gray-700"
+                            onClick={() => column.sortable && handleSort(column.key)}
+                            disabled={!column.sortable}
+                          >
+                            <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              {column.label}
+                            </span>
+                            {column.sortable && (
+                              <div className="flex flex-col ml-1">
+                                <TriangleUpIcon 
+                                  className={`h-3 w-3 ${
+                                    sortConfig.key === column.key && sortConfig.direction === 'asc' 
+                                      ? 'text-blue-500' 
+                                      : 'text-gray-400'
+                                  }`} 
+                                />
+                                <TriangleDownIcon 
+                                  className={`h-3 w-3 ${
+                                    sortConfig.key === column.key && sortConfig.direction === 'desc' 
+                                      ? 'text-blue-500' 
+                                      : 'text-gray-400'
+                                  }`} 
+                                />
+                              </div>
+                            )}
+                          </button>
+                          <div className="ml-2">
+                            <ColumnManager
+                              column={column}
+                              onLock={handleColumnLock}
+                              onDelete={handleColumnDelete}
+                              onAddColumn={handleAddColumn}
+                              onMoveColumn={handleMoveColumn}
+                              position={index}
+                              totalColumns={columns.length}
+                            />
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white">
-              {getPaginatedContacts().map((contact) => (
-                <tr key={contact.id}>
-                  {columns.map((column, index) => (
-                    <td key={`${column.id}-${index}`} className={`${column.width} px-4 py-3 text-sm text-gray-900`}>
-                      {column.key === 'checkbox' ? (
-                        <div className="flex justify-center">
+                      )}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {getPaginatedContacts().map((contact) => (
+                  <tr key={contact.id} className="hover:bg-gray-50">
+                    {columns.map((column, index) => (
+                      <td key={`${column.id}-${index}`} className="px-4 py-3">
+                        {column.key === 'checkbox' ? (
                           <input
                             type="checkbox"
                             checked={selectedContacts.includes(contact.id)}
                             onChange={() => handleSelectContact(contact.id)}
                             className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                           />
-                        </div>
-                      ) : column.key === 'name' ? (
-                        <div className="flex items-center">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700 flex-shrink-0 mr-3">
-                            {getContactAvatar(contact)}
-                          </div>
-                          <div className="table-cell-content flex-1" title={getColumnValue(contact, column.key)}>
+                        ) : column.key === 'name' ? (
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium bg-gray-200 text-gray-700">
+                              {getContactAvatar(contact)}
+                            </div>
                             <span className="text-sm font-medium text-gray-900">{getColumnValue(contact, column.key)}</span>
                           </div>
-                        </div>
-                      ) : column.key === 'owner' ? (
-                        <div className="flex items-center">
-                          <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0 mr-2">
-                            <span className="text-xs text-gray-600">👤</span>
-                          </div>
-                          <div className="table-cell-content flex-1" title={getColumnValue(contact, column.key)}>
+                        ) : column.key === 'owner' ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center">
+                              <span className="text-xs text-gray-600">👤</span>
+                            </div>
                             <span className="text-sm text-gray-900">{getColumnValue(contact, column.key)}</span>
                           </div>
-                        </div>
-                      ) : column.key === 'company' ? (
-                        <div className="flex items-center">
-                          <div className="w-5 h-5 rounded bg-gray-300 flex items-center justify-center flex-shrink-0 mr-2">
-                            <span className="text-xs text-gray-600">🏢</span>
-                          </div>
-                          <div className="table-cell-content flex-1" title={getColumnValue(contact, column.key)}>
+                        ) : column.key === 'company' ? (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-5 h-5 rounded bg-gray-300 flex items-center justify-center">
+                              <span className="text-xs text-gray-600">🏢</span>
+                            </div>
                             <span className="text-sm text-gray-900">{getColumnValue(contact, column.key)}</span>
                           </div>
-                        </div>
-                      ) : column.key === 'leadStatus' ? (
-                        <div className="flex items-center">
-                          <div className="table-cell-content flex-1" title={getColumnValue(contact, column.key)}>
-                            <div dangerouslySetInnerHTML={{ __html: getColumnValue(contact, column.key) }} />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center">
-                          <div className="table-cell-content flex-1" title={getColumnValue(contact, column.key)}>
-                            {getColumnValue(contact, column.key)}
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                        ) : column.key === 'leadStatus' ? (
+                          <div dangerouslySetInnerHTML={{ __html: getColumnValue(contact, column.key) }} />
+                        ) : (
+                          <span className="text-sm text-gray-900">{getColumnValue(contact, column.key)}</span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
-          </div>
         </div>
 
         {/* Pagination */}
         {getPaginatedContacts().length > 0 && (
-          <div className="flex items-center justify-center space-x-2 mt-2 pt-6 px-6 pb-6">
-          {(() => {
-            const paginationInfo = getPaginationInfo()
+          <div className="flex items-center justify-center space-x-4 mt-6 pt-4 border-t border-gray-200">
+            <button 
+              className={`flex items-center space-x-1 px-3 py-2 text-sm ${
+                getPaginationInfo().hasPrevPage 
+                  ? 'text-gray-600 hover:text-gray-900' 
+                  : 'text-gray-400 cursor-not-allowed'
+              }`}
+              disabled={!getPaginationInfo().hasPrevPage}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
+            >
+              <ChevronLeftIcon className="h-4 w-4" />
+              <span>Prev</span>
+            </button>
             
-            return (
-              <>
-                {/* Previous Button */}
-                <button 
-                  className={`text-sm font-medium ${
-                    paginationInfo.hasPrevPage 
-                      ? 'text-blue-600 hover:text-blue-800' 
-                      : 'text-gray-400 cursor-not-allowed'
-                  }`}
-                  disabled={!paginationInfo.hasPrevPage}
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                >
-                  Previous
-                </button>
-                
-                {/* Page Numbers */}
-                <div className="flex items-center space-x-1">
-                  {(() => {
-                    const { totalPages, currentPage } = paginationInfo
-                    const pages = []
-                    
-                    // If total pages is 10 or less, show all pages
-                    if (totalPages <= 10) {
-                      for (let i = 1; i <= totalPages; i++) {
-                        pages.push(i);
-                      }
-                    } else {
-                      // For more than 10 pages, show smart pagination
-                      if (currentPage <= 5) {
-                        // Show first 7 pages + ellipsis + last page
-                        for (let i = 1; i <= 7; i++) {
-                          pages.push(i);
-                        }
-                        pages.push('...');
-                        pages.push(totalPages);
-                      } else if (currentPage >= totalPages - 4) {
-                        // Show first page + ellipsis + last 7 pages
-                        pages.push(1);
-                        pages.push('...');
-                        for (let i = totalPages - 6; i <= totalPages; i++) {
-                          pages.push(i);
-                        }
-                      } else {
-                        // Show first page + ellipsis + current page and neighbors + ellipsis + last page
-                        pages.push(1);
-                        pages.push('...');
-                        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                          pages.push(i);
-                        }
-                        pages.push('...');
-                        pages.push(totalPages);
-                      }
-                    }
-                    
-                    return pages.map((pageNum, index) => (
-                      pageNum === '...' ? (
-                        <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-400">
-                          ...
-                        </span>
-                      ) : (
-                        <button
-                          key={pageNum}
-                          className={`px-2 py-1 text-sm font-medium rounded ${
-                            pageNum === currentPage
-                              ? 'text-orange-600 font-semibold' // Current page - orange and bold
-                              : 'text-blue-600 hover:text-blue-800' // Other pages - blue
-                          }`}
-                          onClick={() => setPagination(prev => ({ ...prev, page: pageNum as number }))}
-                        >
-                          {pageNum}
-                        </button>
-                      )
-                    ));
-                  })()}
-                </div>
-                
-                {/* Next Button */}
-                <button 
-                  className={`text-sm font-medium ${
-                    paginationInfo.hasNextPage 
-                      ? 'text-blue-600 hover:text-blue-800' 
-                      : 'text-gray-400 cursor-not-allowed'
-                  }`}
-                  disabled={!paginationInfo.hasNextPage}
-                  onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                >
-                  Next
-                </button>
-              </>
-            )
-          })()}
+            <button className="px-3 py-2 text-sm font-medium text-white bg-orange-500 rounded-md">
+              {getPaginationInfo().currentPage}
+            </button>
+            
+            <button 
+              className={`flex items-center space-x-1 px-3 py-2 text-sm ${
+                getPaginationInfo().hasNextPage 
+                  ? 'text-gray-600 hover:text-gray-900' 
+                  : 'text-gray-400 cursor-not-allowed'
+              }`}
+              disabled={!getPaginationInfo().hasNextPage}
+              onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
+            >
+              <span>Next</span>
+              <ChevronRightIcon className="h-4 w-4" />
+            </button>
+            
+            <div className="flex items-center space-x-1">
+              <span className="text-sm text-gray-600">{pagination.limit} per page</span>
+              <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+            </div>
           </div>
         )}
+
+        {/* Create Contact Modal */}
+        <CreateContactModal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          onSuccess={handleCreateContactSuccess}
+        />
+
+        {/* Add Column Modal */}
+        <AddColumnModal
+          isOpen={isAddColumnModalOpen}
+          onClose={() => setIsAddColumnModalOpen(false)}
+          onAddColumn={handleAddCustomColumn}
+        />
       </div>
-
-      {/* Create Contact Modal */}
-      <CreateContactModal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        onSuccess={handleCreateContactSuccess}
-      />
-
-      {/* Add Column Modal */}
-      <AddColumnModal
-        isOpen={isAddColumnModalOpen}
-        onClose={() => setIsAddColumnModalOpen(false)}
-        onAddColumn={handleAddCustomColumn}
-      />
-    </div>
   )
 }
