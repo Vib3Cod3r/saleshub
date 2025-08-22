@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { logCompaniesError } from '@/lib/cursor-error-tracker'
+import { logInternalServer } from '@/lib/error-logger'
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -25,11 +25,19 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error for Cursor analysis
+    // Log error with enhanced error logger
     const componentName = this.getComponentName(errorInfo)
     const pageName = this.getPageName()
     
-    logCompaniesError(error, componentName, 'componentDidCatch')
+    logInternalServer(`Error Boundary caught an error in ${componentName} on ${pageName}`, {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+      componentName,
+      pageName,
+      url: typeof window !== 'undefined' ? window.location.href : undefined,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined
+    }, error.stack, 'critical')
     
     // Log to console for development
     if (process.env.NODE_ENV === 'development') {

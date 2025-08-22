@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -31,6 +32,8 @@ func GetCompanies(c *gin.Context) {
 	// Preload relationships
 	query = query.Preload("Industry").
 		Preload("Size").
+		Preload("OwnerContact").
+		Preload("AssignedUser").
 		Preload("Contacts").
 		Preload("Contacts.PhoneNumbers").
 		Preload("Contacts.EmailAddresses")
@@ -45,6 +48,40 @@ func GetCompanies(c *gin.Context) {
 	if err := query.Offset(offset).Limit(limit).Find(&companies).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch companies"})
 		return
+	}
+
+	// Manually load phone numbers, email addresses, addresses, and owner contacts for each company
+	for i := range companies {
+		// Load phone numbers
+		var phoneNumbers []models.PhoneNumber
+		config.DB.Where("entity_id = ? AND entity_type = ?", companies[i].ID, "Company").Find(&phoneNumbers)
+		companies[i].PhoneNumbers = phoneNumbers
+		log.Printf("DEBUG: Company %s has %d phone numbers", companies[i].Name, len(phoneNumbers))
+
+		// Load email addresses
+		var emailAddresses []models.EmailAddress
+		config.DB.Where("entity_id = ? AND entity_type = ?", companies[i].ID, "Company").Find(&emailAddresses)
+		companies[i].EmailAddresses = emailAddresses
+		log.Printf("DEBUG: Company %s has %d email addresses", companies[i].Name, len(emailAddresses))
+
+		// Load addresses
+		var addresses []models.Address
+		config.DB.Where("entity_id = ? AND entity_type = ?", companies[i].ID, "Company").Find(&addresses)
+		companies[i].Addresses = addresses
+		log.Printf("DEBUG: Company %s has %d addresses", companies[i].Name, len(addresses))
+
+		// Load owner contact if exists
+		if companies[i].OwnerContactID != nil {
+			var ownerContact models.Contact
+			if err := config.DB.Where("id = ?", *companies[i].OwnerContactID).First(&ownerContact).Error; err == nil {
+				companies[i].OwnerContact = &ownerContact
+				log.Printf("DEBUG: Company %s has owner contact %s %s", companies[i].Name, ownerContact.FirstName, ownerContact.LastName)
+			} else {
+				log.Printf("DEBUG: Company %s owner contact not found: %v", companies[i].Name, err)
+			}
+		} else {
+			log.Printf("DEBUG: Company %s has no owner contact ID", companies[i].Name)
+		}
 	}
 
 	// Calculate total pages
@@ -87,7 +124,15 @@ func GetCompany(c *gin.Context) {
 	tenantID := c.GetString("tenantID")
 
 	var company models.Company
-	if err := config.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&company).Error; err != nil {
+	if err := config.DB.Where("id = ? AND tenant_id = ?", id, tenantID).
+		Preload("Industry").
+		Preload("Size").
+		Preload("OwnerContact").
+		Preload("AssignedUser").
+		Preload("Contacts").
+		Preload("Contacts.PhoneNumbers").
+		Preload("Contacts.EmailAddresses").
+		First(&company).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Company not found"})
 			return
@@ -95,6 +140,19 @@ func GetCompany(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch company"})
 		return
 	}
+
+	// Manually load phone numbers, email addresses, and addresses
+	var phoneNumbers []models.PhoneNumber
+	config.DB.Where("entity_id = ? AND entity_type = ?", company.ID, "Company").Find(&phoneNumbers)
+	company.PhoneNumbers = phoneNumbers
+
+	var emailAddresses []models.EmailAddress
+	config.DB.Where("entity_id = ? AND entity_type = ?", company.ID, "Company").Find(&emailAddresses)
+	company.EmailAddresses = emailAddresses
+
+	var addresses []models.Address
+	config.DB.Where("entity_id = ? AND entity_type = ?", company.ID, "Company").Find(&addresses)
+	company.Addresses = addresses
 
 	c.JSON(http.StatusOK, company)
 }

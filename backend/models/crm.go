@@ -26,6 +26,14 @@ type Company struct {
 	// External IDs
 	ExternalID *string `json:"externalId"`
 
+	// Company owner relationship (contact who owns/is responsible for the company)
+	OwnerContactID *string  `json:"ownerContactId" gorm:"type:uuid;default:null"`
+	OwnerContact   *Contact `json:"ownerContact" gorm:"foreignKey:OwnerContactID;references:ID"`
+
+	// Assigned user (internal user assigned to manage this company)
+	AssignedTo   *string `json:"assignedTo" gorm:"type:uuid;default:null"`
+	AssignedUser *User   `json:"assignedUser" gorm:"foreignKey:AssignedTo;references:ID"`
+
 	// Multi-tenancy
 	TenantID string `json:"tenantId" gorm:"not null"`
 	Tenant   Tenant `json:"tenant" gorm:"foreignKey:TenantID"`

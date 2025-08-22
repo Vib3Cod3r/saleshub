@@ -125,13 +125,14 @@ func InitDatabase() {
 		log.Fatal("[DB-ERROR] Failed to get underlying SQL DB:", err)
 	}
 
-	// Configure connection pool
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
+	// Optimized connection pool for 20K scale
+	sqlDB.SetMaxIdleConns(20)    // Increased from 10
+	sqlDB.SetMaxOpenConns(200)   // Increased from 100
 	sqlDB.SetConnMaxLifetime(time.Hour)
+	sqlDB.SetConnMaxIdleTime(30 * time.Minute) // New: Close idle connections after 30 minutes
 
 	log.Printf("[DB-INFO] Database connected successfully | DSN: %s", dsn)
-	log.Printf("[DB-INFO] Connection pool configured | MaxIdle: 10, MaxOpen: 100, MaxLifetime: 1h")
+	log.Printf("[DB-INFO] Connection pool configured for 20K scale | MaxIdle: 20, MaxOpen: 200, MaxLifetime: 1h, MaxIdleTime: 30m")
 
 	// Log connection pool stats
 	go logConnectionPoolStats(sqlDB)

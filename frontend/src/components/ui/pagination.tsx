@@ -1,33 +1,40 @@
-import { CRM_CONSTANTS } from '@/lib/utils'
-
-interface PaginationInfo {
-  totalItems: number
-  totalPages: number
-  currentPage: number
-  hasNextPage: boolean
-  hasPrevPage: boolean
-}
-
 interface PaginationProps {
-  paginationInfo: PaginationInfo
+  currentPage: number
+  totalPages: number
+  pageSize: number
+  totalItems: number
   onPageChange: (page: number) => void
+  onPageSizeChange: (pageSize: number) => void
+  pageSizeOptions?: number[]
   className?: string
 }
 
-export function Pagination({ paginationInfo, onPageChange, className = '' }: PaginationProps) {
-  const { totalPages, currentPage, hasNextPage, hasPrevPage } = paginationInfo
+export function Pagination({ 
+  currentPage, 
+  totalPages, 
+  pageSize, 
+  totalItems, 
+  onPageChange, 
+  onPageSizeChange, 
+  pageSizeOptions = [10, 25, 50, 100],
+  className = '' 
+}: PaginationProps) {
+  const hasNextPage = currentPage < totalPages
+  const hasPrevPage = currentPage > 1
 
   const generatePageNumbers = () => {
     const pages: (number | string)[] = []
+    const maxVisiblePages = 10
+    const ellipsisThreshold = 5
     
     // If total pages is 10 or less, show all pages
-    if (totalPages <= CRM_CONSTANTS.PAGINATION.MAX_VISIBLE_PAGES) {
+    if (totalPages <= maxVisiblePages) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i)
       }
     } else {
       // For more than 10 pages, show smart pagination
-      if (currentPage <= CRM_CONSTANTS.PAGINATION.ELLIPSIS_THRESHOLD) {
+      if (currentPage <= ellipsisThreshold) {
         // Show first 7 pages + ellipsis + last page
         for (let i = 1; i <= 7; i++) {
           pages.push(i)
@@ -59,55 +66,75 @@ export function Pagination({ paginationInfo, onPageChange, className = '' }: Pag
   if (totalPages <= 1) return null
 
   return (
-    <div className={`flex items-center justify-center space-x-2 mt-12 pt-6 ${className}`}>
-      {/* Previous Button */}
-      <button 
-        className={`text-sm font-medium ${
-          hasPrevPage 
-            ? 'text-blue-600 hover:text-blue-800' 
-            : 'text-gray-400 cursor-not-allowed'
-        }`}
-        disabled={!hasPrevPage}
-        onClick={() => onPageChange(currentPage - 1)}
-      >
-        Previous
-      </button>
-      
-      {/* Page Numbers */}
-      <div className="flex items-center space-x-1">
-        {generatePageNumbers().map((pageNum) => (
-          pageNum === '...' ? (
-            <span key={`ellipsis-${Math.random().toString(36).substr(2, 9)}`} className="px-2 py-1 text-sm text-gray-400">
-              ...
-            </span>
-          ) : (
-            <button
-              key={`page-${pageNum}`}
-              className={`px-2 py-1 text-sm font-medium rounded ${
-                pageNum === currentPage
-                  ? 'text-black font-semibold' // Current page - black and bold
-                  : 'text-blue-600 hover:text-blue-800' // Other pages - blue
-              }`}
-              onClick={() => onPageChange(pageNum as number)}
-            >
-              {pageNum}
-            </button>
-          )
-        ))}
+    <div className={`flex items-center justify-between ${className}`}>
+      {/* Page Size Control */}
+      <div className="flex items-center space-x-2">
+        <span className="text-sm text-gray-700">Show:</span>
+        <select
+          value={pageSize}
+          onChange={(e) => onPageSizeChange(Number(e.target.value))}
+          className="text-sm border border-gray-300 rounded px-2 py-1"
+        >
+          {pageSizeOptions.map(size => (
+            <option key={size} value={size}>{size}</option>
+          ))}
+        </select>
+        <span className="text-sm text-gray-700">
+          of {totalItems} items
+        </span>
       </div>
-      
-      {/* Next Button */}
-      <button 
-        className={`text-sm font-medium ${
-          hasNextPage 
-            ? 'text-blue-600 hover:text-blue-800' 
-            : 'text-gray-400 cursor-not-allowed'
-        }`}
-        disabled={!hasNextPage}
-        onClick={() => onPageChange(currentPage + 1)}
-      >
-        Next
-      </button>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center space-x-2">
+        {/* Previous Button */}
+        <button 
+          className={`text-sm font-medium px-3 py-1 rounded ${
+            hasPrevPage 
+              ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100' 
+              : 'text-gray-400 cursor-not-allowed'
+          }`}
+          disabled={!hasPrevPage}
+          onClick={() => onPageChange(currentPage - 1)}
+        >
+          Previous
+        </button>
+        
+        {/* Page Numbers */}
+        <div className="flex items-center space-x-1">
+          {generatePageNumbers().map((pageNum, index) => (
+            pageNum === '...' ? (
+              <span key={`ellipsis-${index}`} className="px-2 py-1 text-sm text-gray-400">
+                ...
+              </span>
+            ) : (
+              <button
+                key={`page-${pageNum}`}
+                className={`px-2 py-1 text-sm font-medium rounded ${
+                  pageNum === currentPage
+                    ? 'bg-orange-500 text-white' // Current page - orange background
+                    : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100' // Other pages
+                }`}
+                onClick={() => onPageChange(pageNum as number)}
+              >
+                {pageNum}
+              </button>
+            )
+          ))}
+        </div>
+        
+        {/* Next Button */}
+        <button 
+          className={`text-sm font-medium px-3 py-1 rounded ${
+            hasNextPage 
+              ? 'text-gray-700 hover:text-gray-900 hover:bg-gray-100' 
+              : 'text-gray-400 cursor-not-allowed'
+          }`}
+          disabled={!hasNextPage}
+          onClick={() => onPageChange(currentPage + 1)}
+        >
+          Next
+        </button>
+      </div>
     </div>
   )
 }

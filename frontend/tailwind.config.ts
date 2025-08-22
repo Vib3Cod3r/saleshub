@@ -42,6 +42,9 @@ const config: Config = {
         "fade-in": "fade-in 0.5s ease-out",
         "slide-in": "slide-in 0.3s ease-out",
       },
+      borderRadius: {
+        'tl-4xl': '16px',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

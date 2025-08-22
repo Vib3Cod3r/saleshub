@@ -26,8 +26,8 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { user, logout } = useAuth()
 
   return (
-    <header className="text-white shadow-lg pr-9" style={{ backgroundColor: '#402D50' }}>
-      <div className="flex h-14 items-center justify-between px-4 lg:px-0">
+    <header className="text-white shadow-lg" style={{ backgroundColor: '#402D50' }}>
+      <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center space-x-4 lg:space-x-0">
           <button
             type="button"
@@ -46,8 +46,8 @@ export function Header({ onMenuClick }: HeaderProps) {
               </div>
               <input
                 type="text"
-                className="block w-80 rounded-lg border-0 py-2 pl-10 pr-3 text-white placeholder:text-gray-400 focus:outline-none text-sm leading-5 bg-slate-700"
-                placeholder="Search SalesHub"
+                className="block w-64 rounded-lg border-0 py-2 pl-10 pr-3 text-white placeholder:text-gray-400 focus:outline-none text-sm leading-5 bg-slate-700"
+                placeholder="Q Search SalesHub"
               />
             </div>
             
