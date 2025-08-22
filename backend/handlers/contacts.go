@@ -64,6 +64,11 @@ func GetContacts(c *gin.Context) {
 		query = query.Where("company_id = ?", companyID)
 	}
 
+	// Add unassigned filter
+	if unassigned := c.Query("unassigned"); unassigned == "true" {
+		query = query.Where("owner_id IS NULL")
+	}
+
 	// Preload relationships
 	query = query.Preload("Company").
 		Preload("Owner").

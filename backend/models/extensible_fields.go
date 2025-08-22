@@ -87,3 +87,6 @@ func (ExtensibleField) TableName() string {
 func (ExtensibleFieldValue) TableName() string {
 	return "extensible_field_values"
 }
+
+
+

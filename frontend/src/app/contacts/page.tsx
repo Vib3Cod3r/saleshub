@@ -113,7 +113,7 @@ export default function ContactsPage() {
       setLoading(false)
     }
     loadInitialData()
-  }, [])
+  }, [activeFilter]) // Refetch when filter changes
 
   // Reset to first page when search changes
   useEffect(() => {
@@ -238,7 +238,15 @@ export default function ContactsPage() {
         return
       }
 
-      const response = await fetch(`http://localhost:8089/api/crm/contacts?limit=1000`, {
+      // Build query parameters based on current filter
+      const params = new URLSearchParams()
+      params.append('limit', '1000')
+      
+      if (activeFilter === 'unassigned') {
+        params.append('unassigned', 'true')
+      }
+
+      const response = await fetch(`http://localhost:8089/api/crm/contacts?${params.toString()}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -439,18 +447,17 @@ export default function ContactsPage() {
   }
 
   const getContactOwner = (contact: Contact) => {
-    if (contact.owner) {
+    // If contact has a real owner, return their name
+    if (contact.owner && contact.owner.firstName && contact.owner.lastName) {
       return `${contact.owner.firstName} ${contact.owner.lastName}`
     }
     
-    // Assign default owner based on contact name
-    const name = getContactName(contact)
-    if (name && name !== '--') {
-      const nameHash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-      const owners = ['Ted Tse', 'Admin User', 'Test User', 'Theodore Tse']
-      return owners[nameHash % owners.length]
+    // If contact has ownerId but no owner object, it's assigned but we don't have owner details
+    if (contact.ownerId) {
+      return 'Assigned (Unknown Owner)'
     }
     
+    // If no owner and no ownerId, it's truly unassigned
     return 'Unassigned'
   }
 
@@ -482,15 +489,127 @@ export default function ContactsPage() {
     const name = getContactName(contact)
     if (name && name !== '--') {
       const nameHash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-      const cities = [
-        'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 
-        'San Antonio', 'San Diego', 'Dallas', 'San Jose', 'Austin', 'Jacksonville',
-        'Fort Worth', 'Columbus', 'Charlotte', 'San Francisco', 'Indianapolis',
-        'Seattle', 'Denver', 'Washington', 'Boston', 'El Paso', 'Nashville',
-        'Detroit', 'Oklahoma City', 'Portland', 'Las Vegas', 'Memphis', 'Louisville',
-        'Baltimore', 'Milwaukee', 'Albuquerque', 'Tucson', 'Fresno', 'Sacramento'
+      
+      // Realistic city-country combinations
+      const cityCountryPairs = [
+        { city: 'New York', country: 'United States' },
+        { city: 'Los Angeles', country: 'United States' },
+        { city: 'Chicago', country: 'United States' },
+        { city: 'Houston', country: 'United States' },
+        { city: 'Phoenix', country: 'United States' },
+        { city: 'Philadelphia', country: 'United States' },
+        { city: 'San Antonio', country: 'United States' },
+        { city: 'San Diego', country: 'United States' },
+        { city: 'Dallas', country: 'United States' },
+        { city: 'San Jose', country: 'United States' },
+        { city: 'Austin', country: 'United States' },
+        { city: 'Jacksonville', country: 'United States' },
+        { city: 'Fort Worth', country: 'United States' },
+        { city: 'Columbus', country: 'United States' },
+        { city: 'Charlotte', country: 'United States' },
+        { city: 'San Francisco', country: 'United States' },
+        { city: 'Indianapolis', country: 'United States' },
+        { city: 'Seattle', country: 'United States' },
+        { city: 'Denver', country: 'United States' },
+        { city: 'Washington', country: 'United States' },
+        { city: 'Boston', country: 'United States' },
+        { city: 'El Paso', country: 'United States' },
+        { city: 'Nashville', country: 'United States' },
+        { city: 'Detroit', country: 'United States' },
+        { city: 'Oklahoma City', country: 'United States' },
+        { city: 'Portland', country: 'United States' },
+        { city: 'Las Vegas', country: 'United States' },
+        { city: 'Memphis', country: 'United States' },
+        { city: 'Louisville', country: 'United States' },
+        { city: 'Baltimore', country: 'United States' },
+        { city: 'Milwaukee', country: 'United States' },
+        { city: 'Albuquerque', country: 'United States' },
+        { city: 'Tucson', country: 'United States' },
+        { city: 'Fresno', country: 'United States' },
+        { city: 'Sacramento', country: 'United States' },
+        { city: 'Toronto', country: 'Canada' },
+        { city: 'Montreal', country: 'Canada' },
+        { city: 'Vancouver', country: 'Canada' },
+        { city: 'Calgary', country: 'Canada' },
+        { city: 'Edmonton', country: 'Canada' },
+        { city: 'Ottawa', country: 'Canada' },
+        { city: 'Winnipeg', country: 'Canada' },
+        { city: 'Quebec City', country: 'Canada' },
+        { city: 'London', country: 'United Kingdom' },
+        { city: 'Manchester', country: 'United Kingdom' },
+        { city: 'Birmingham', country: 'United Kingdom' },
+        { city: 'Leeds', country: 'United Kingdom' },
+        { city: 'Liverpool', country: 'United Kingdom' },
+        { city: 'Sheffield', country: 'United Kingdom' },
+        { city: 'Edinburgh', country: 'United Kingdom' },
+        { city: 'Glasgow', country: 'United Kingdom' },
+        { city: 'Bristol', country: 'United Kingdom' },
+        { city: 'Sydney', country: 'Australia' },
+        { city: 'Melbourne', country: 'Australia' },
+        { city: 'Brisbane', country: 'Australia' },
+        { city: 'Perth', country: 'Australia' },
+        { city: 'Adelaide', country: 'Australia' },
+        { city: 'Gold Coast', country: 'Australia' },
+        { city: 'Newcastle', country: 'Australia' },
+        { city: 'Canberra', country: 'Australia' },
+        { city: 'Berlin', country: 'Germany' },
+        { city: 'Hamburg', country: 'Germany' },
+        { city: 'Munich', country: 'Germany' },
+        { city: 'Cologne', country: 'Germany' },
+        { city: 'Frankfurt', country: 'Germany' },
+        { city: 'Stuttgart', country: 'Germany' },
+        { city: 'Düsseldorf', country: 'Germany' },
+        { city: 'Dortmund', country: 'Germany' },
+        { city: 'Essen', country: 'Germany' },
+        { city: 'Paris', country: 'France' },
+        { city: 'Marseille', country: 'France' },
+        { city: 'Lyon', country: 'France' },
+        { city: 'Toulouse', country: 'France' },
+        { city: 'Nice', country: 'France' },
+        { city: 'Nantes', country: 'France' },
+        { city: 'Strasbourg', country: 'France' },
+        { city: 'Montpellier', country: 'France' },
+        { city: 'Bordeaux', country: 'France' },
+        { city: 'Tokyo', country: 'Japan' },
+        { city: 'Yokohama', country: 'Japan' },
+        { city: 'Osaka', country: 'Japan' },
+        { city: 'Nagoya', country: 'Japan' },
+        { city: 'Sapporo', country: 'Japan' },
+        { city: 'Fukuoka', country: 'Japan' },
+        { city: 'Kobe', country: 'Japan' },
+        { city: 'Kyoto', country: 'Japan' },
+        { city: 'Kawasaki', country: 'Japan' },
+        { city: 'São Paulo', country: 'Brazil' },
+        { city: 'Rio de Janeiro', country: 'Brazil' },
+        { city: 'Brasília', country: 'Brazil' },
+        { city: 'Salvador', country: 'Brazil' },
+        { city: 'Fortaleza', country: 'Brazil' },
+        { city: 'Belo Horizonte', country: 'Brazil' },
+        { city: 'Manaus', country: 'Brazil' },
+        { city: 'Curitiba', country: 'Brazil' },
+        { city: 'Recife', country: 'Brazil' },
+        { city: 'Mumbai', country: 'India' },
+        { city: 'Delhi', country: 'India' },
+        { city: 'Bangalore', country: 'India' },
+        { city: 'Hyderabad', country: 'India' },
+        { city: 'Chennai', country: 'India' },
+        { city: 'Kolkata', country: 'India' },
+        { city: 'Pune', country: 'India' },
+        { city: 'Ahmedabad', country: 'India' },
+        { city: 'Jaipur', country: 'India' },
+        { city: 'Mexico City', country: 'Mexico' },
+        { city: 'Guadalajara', country: 'Mexico' },
+        { city: 'Monterrey', country: 'Mexico' },
+        { city: 'Puebla', country: 'Mexico' },
+        { city: 'Tijuana', country: 'Mexico' },
+        { city: 'Ciudad Juárez', country: 'Mexico' },
+        { city: 'León', country: 'Mexico' },
+        { city: 'Zapopan', country: 'Mexico' },
+        { city: 'Nezahualcóyotl', country: 'Mexico' }
       ]
-      return cities[nameHash % cities.length]
+      
+      const selectedPair = cityCountryPairs[nameHash % cityCountryPairs.length]
+      return selectedPair.city
     }
     
     return 'City not specified'
@@ -499,19 +618,131 @@ export default function ContactsPage() {
   const getContactCountry = (contact: Contact) => {
     if (contact.address?.country) return contact.address.country
     
-    // Generate country from contact name
+    // Generate country from contact name (must match the city)
     const name = getContactName(contact)
     if (name && name !== '--') {
       const nameHash = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-      const countries = [
-        'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany', 'France', 
-        'Japan', 'Brazil', 'India', 'Mexico', 'Italy', 'Spain', 'Netherlands', 
-        'Switzerland', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Belgium', 'Austria',
-        'Singapore', 'South Korea', 'China', 'Russia', 'South Africa', 'Argentina',
-        'Chile', 'Colombia', 'Peru', 'Venezuela', 'New Zealand', 'Ireland', 'Poland',
-        'Czech Republic', 'Hungary', 'Portugal', 'Greece', 'Turkey', 'Israel'
+      
+      // Same city-country pairs as in getContactCity
+      const cityCountryPairs = [
+        { city: 'New York', country: 'United States' },
+        { city: 'Los Angeles', country: 'United States' },
+        { city: 'Chicago', country: 'United States' },
+        { city: 'Houston', country: 'United States' },
+        { city: 'Phoenix', country: 'United States' },
+        { city: 'Philadelphia', country: 'United States' },
+        { city: 'San Antonio', country: 'United States' },
+        { city: 'San Diego', country: 'United States' },
+        { city: 'Dallas', country: 'United States' },
+        { city: 'San Jose', country: 'United States' },
+        { city: 'Austin', country: 'United States' },
+        { city: 'Jacksonville', country: 'United States' },
+        { city: 'Fort Worth', country: 'United States' },
+        { city: 'Columbus', country: 'United States' },
+        { city: 'Charlotte', country: 'United States' },
+        { city: 'San Francisco', country: 'United States' },
+        { city: 'Indianapolis', country: 'United States' },
+        { city: 'Seattle', country: 'United States' },
+        { city: 'Denver', country: 'United States' },
+        { city: 'Washington', country: 'United States' },
+        { city: 'Boston', country: 'United States' },
+        { city: 'El Paso', country: 'United States' },
+        { city: 'Nashville', country: 'United States' },
+        { city: 'Detroit', country: 'United States' },
+        { city: 'Oklahoma City', country: 'United States' },
+        { city: 'Portland', country: 'United States' },
+        { city: 'Las Vegas', country: 'United States' },
+        { city: 'Memphis', country: 'United States' },
+        { city: 'Louisville', country: 'United States' },
+        { city: 'Baltimore', country: 'United States' },
+        { city: 'Milwaukee', country: 'United States' },
+        { city: 'Albuquerque', country: 'United States' },
+        { city: 'Tucson', country: 'United States' },
+        { city: 'Fresno', country: 'United States' },
+        { city: 'Sacramento', country: 'United States' },
+        { city: 'Toronto', country: 'Canada' },
+        { city: 'Montreal', country: 'Canada' },
+        { city: 'Vancouver', country: 'Canada' },
+        { city: 'Calgary', country: 'Canada' },
+        { city: 'Edmonton', country: 'Canada' },
+        { city: 'Ottawa', country: 'Canada' },
+        { city: 'Winnipeg', country: 'Canada' },
+        { city: 'Quebec City', country: 'Canada' },
+        { city: 'London', country: 'United Kingdom' },
+        { city: 'Manchester', country: 'United Kingdom' },
+        { city: 'Birmingham', country: 'United Kingdom' },
+        { city: 'Leeds', country: 'United Kingdom' },
+        { city: 'Liverpool', country: 'United Kingdom' },
+        { city: 'Sheffield', country: 'United Kingdom' },
+        { city: 'Edinburgh', country: 'United Kingdom' },
+        { city: 'Glasgow', country: 'United Kingdom' },
+        { city: 'Bristol', country: 'United Kingdom' },
+        { city: 'Sydney', country: 'Australia' },
+        { city: 'Melbourne', country: 'Australia' },
+        { city: 'Brisbane', country: 'Australia' },
+        { city: 'Perth', country: 'Australia' },
+        { city: 'Adelaide', country: 'Australia' },
+        { city: 'Gold Coast', country: 'Australia' },
+        { city: 'Newcastle', country: 'Australia' },
+        { city: 'Canberra', country: 'Australia' },
+        { city: 'Berlin', country: 'Germany' },
+        { city: 'Hamburg', country: 'Germany' },
+        { city: 'Munich', country: 'Germany' },
+        { city: 'Cologne', country: 'Germany' },
+        { city: 'Frankfurt', country: 'Germany' },
+        { city: 'Stuttgart', country: 'Germany' },
+        { city: 'Düsseldorf', country: 'Germany' },
+        { city: 'Dortmund', country: 'Germany' },
+        { city: 'Essen', country: 'Germany' },
+        { city: 'Paris', country: 'France' },
+        { city: 'Marseille', country: 'France' },
+        { city: 'Lyon', country: 'France' },
+        { city: 'Toulouse', country: 'France' },
+        { city: 'Nice', country: 'France' },
+        { city: 'Nantes', country: 'France' },
+        { city: 'Strasbourg', country: 'France' },
+        { city: 'Montpellier', country: 'France' },
+        { city: 'Bordeaux', country: 'France' },
+        { city: 'Tokyo', country: 'Japan' },
+        { city: 'Yokohama', country: 'Japan' },
+        { city: 'Osaka', country: 'Japan' },
+        { city: 'Nagoya', country: 'Japan' },
+        { city: 'Sapporo', country: 'Japan' },
+        { city: 'Fukuoka', country: 'Japan' },
+        { city: 'Kobe', country: 'Japan' },
+        { city: 'Kyoto', country: 'Japan' },
+        { city: 'Kawasaki', country: 'Japan' },
+        { city: 'São Paulo', country: 'Brazil' },
+        { city: 'Rio de Janeiro', country: 'Brazil' },
+        { city: 'Brasília', country: 'Brazil' },
+        { city: 'Salvador', country: 'Brazil' },
+        { city: 'Fortaleza', country: 'Brazil' },
+        { city: 'Belo Horizonte', country: 'Brazil' },
+        { city: 'Manaus', country: 'Brazil' },
+        { city: 'Curitiba', country: 'Brazil' },
+        { city: 'Recife', country: 'Brazil' },
+        { city: 'Mumbai', country: 'India' },
+        { city: 'Delhi', country: 'India' },
+        { city: 'Bangalore', country: 'India' },
+        { city: 'Hyderabad', country: 'India' },
+        { city: 'Chennai', country: 'India' },
+        { city: 'Kolkata', country: 'India' },
+        { city: 'Pune', country: 'India' },
+        { city: 'Ahmedabad', country: 'India' },
+        { city: 'Jaipur', country: 'India' },
+        { city: 'Mexico City', country: 'Mexico' },
+        { city: 'Guadalajara', country: 'Mexico' },
+        { city: 'Monterrey', country: 'Mexico' },
+        { city: 'Puebla', country: 'Mexico' },
+        { city: 'Tijuana', country: 'Mexico' },
+        { city: 'Ciudad Juárez', country: 'Mexico' },
+        { city: 'León', country: 'Mexico' },
+        { city: 'Zapopan', country: 'Mexico' },
+        { city: 'Nezahualcóyotl', country: 'Mexico' }
       ]
-      return countries[nameHash % countries.length]
+      
+      const selectedPair = cityCountryPairs[nameHash % cityCountryPairs.length]
+      return selectedPair.country
     }
     
     return 'Country not specified'
@@ -548,11 +779,9 @@ export default function ContactsPage() {
         return generatedOwner === 'Admin User'
       })
     } else if (activeFilter === 'unassigned') {
-      // For "Unassigned contacts" - check if the generated owner name is "Unassigned"
-      filteredContacts = filteredContacts.filter(contact => {
-        const generatedOwner = getContactOwner(contact)
-        return generatedOwner === 'Unassigned'
-      })
+      // For "Unassigned contacts" - the backend already filtered these
+      // Just apply search filter if needed
+      console.log('Showing unassigned contacts from backend filter')
     }
     // activeFilter === 'all' means no additional filtering
 
@@ -900,24 +1129,13 @@ export default function ContactsPage() {
             <div className="flex items-center space-x-1">
               <button 
                 onClick={() => handleFilterChange('all')}
-                className={`flex items-center space-x-2 px-3 py-2 text-sm font-medium rounded-md ${
+                className={`px-3 py-2 text-sm font-medium rounded-md ${
                   activeFilter === 'all' && !selectedOwnerId
                     ? 'text-orange-600 bg-orange-50'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                <span>All contacts</span>
-                {activeFilter === 'all' && !selectedOwnerId && (
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      clearAllFilters()
-                    }}
-                    className="text-orange-400 hover:text-orange-600"
-                  >
-                    ×
-                  </button>
-                )}
+                All contacts
               </button>
               <button 
                 onClick={() => handleFilterChange('my')}

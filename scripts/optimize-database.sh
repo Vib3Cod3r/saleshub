@@ -81,3 +81,6 @@ fi
 
 echo ""
 log "🎯 Your database is now ready to handle 20,000 contacts and 20,000 companies efficiently!"
+
+
+

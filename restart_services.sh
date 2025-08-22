@@ -18,7 +18,7 @@ kill_port() {
 restart_backend() {
     echo "🚀 Starting backend..."
     cd backend
-    go run cmd/server/main.go &
+    go run main.go &
     cd ..
     echo "✅ Backend started on port 8089"
 }

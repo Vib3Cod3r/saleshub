@@ -1,6 +1,8 @@
 package lib
 
 import (
+	"saleshub-backend/models"
+
 	"gorm.io/gorm"
 )
 
@@ -42,12 +44,12 @@ func (qo *QueryOptimizer) OptimizedSearchQuery(tenantID, searchTerm, entityType 
 	switch entityType {
 	case "contacts":
 		return qo.db.Model(&models.Contact{}).
-			Where("tenant_id = ? AND deleted_at IS NULL AND (first_name ILIKE ? OR last_name ILIKE ?)", 
+			Where("tenant_id = ? AND deleted_at IS NULL AND (first_name ILIKE ? OR last_name ILIKE ?)",
 				tenantID, "%"+searchTerm+"%", "%"+searchTerm+"%").
 			Preload("Company")
 	case "companies":
 		return qo.db.Model(&models.Company{}).
-			Where("tenant_id = ? AND deleted_at IS NULL AND name ILIKE ?", 
+			Where("tenant_id = ? AND deleted_at IS NULL AND name ILIKE ?",
 				tenantID, "%"+searchTerm+"%").
 			Preload("Industry").
 			Preload("Size")

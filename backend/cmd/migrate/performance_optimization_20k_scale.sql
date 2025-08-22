@@ -170,3 +170,6 @@ COMMENT ON INDEX idx_companies_tenant_id IS 'Critical for multi-tenant data isol
 COMMENT ON INDEX idx_email_addresses_entity_composite IS 'Optimized for polymorphic email queries';
 COMMENT ON INDEX idx_phone_numbers_entity_composite IS 'Optimized for polymorphic phone queries';
 COMMENT ON INDEX idx_custom_field_values_entity_composite IS 'Optimized for flexible schema queries';
+
+
+
