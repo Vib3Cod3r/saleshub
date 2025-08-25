@@ -1,24 +1,29 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import ErrorBoundary from '@/components/error-boundary'
-import { QueryProvider } from '@/providers/query-provider'
-import { AuthProvider } from '@/hooks/use-auth-provider'
-import { MainContent } from '@/components/layout/main-content'
-import { setupGlobalErrorInterceptor } from '@/lib/global-error-interceptor'
+import { Navigation } from '../components/layout/Navigation'
+import { AuthProvider } from '../contexts/AuthContext'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Sales CRM',
-  description: 'Modern Sales CRM Application',
+  title: 'SalesHub CRM',
+  description: 'Modern CRM for sales teams',
 }
 
-// Set up global error interceptor on client side
-// Temporarily disabled to debug 500 error
-// if (typeof window !== 'undefined') {
-//   setupGlobalErrorInterceptor()
-// }
+// Create a client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+      retry: 2,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+  },
+});
 
 export default function RootLayout({
   children,
@@ -28,15 +33,22 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ErrorBoundary>
-          <QueryProvider>
-            <AuthProvider>
-              <MainContent>
-                {children}
-              </MainContent>
-            </AuthProvider>
-          </QueryProvider>
-        </ErrorBoundary>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <Navigation />
+            {children}
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#363636',
+                  color: '#fff',
+                },
+              }}
+            />
+          </AuthProvider>
+        </QueryClientProvider>
       </body>
     </html>
   )

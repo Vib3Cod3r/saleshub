@@ -1,0 +1,128 @@
+export interface Contact {
+  id: string;
+  firstName: string;
+  lastName: string;
+  middleName?: string;
+  preferredName?: string;
+  email?: string;
+  emailVerified: boolean;
+  phone?: string;
+  mobile?: string;
+  workPhone?: string;
+  fax?: string;
+  website?: string;
+  jobTitle?: string;
+  department?: string;
+  isDecisionMaker: boolean;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+  birthday?: Date;
+  spouseName?: string;
+  childrenNames?: string;
+  address?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  language?: string;
+  leadSource?: string;
+  leadStatus: string;
+  leadScore?: number;
+  notes?: string;
+  tags: string[];
+  lastContactDate?: Date;
+  lastActivityDate?: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  companyId?: string;
+  ownerId?: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  legalName?: string;
+  dba?: string;
+  website?: string;
+  phone?: string;
+  fax?: string;
+  email?: string;
+  address?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
+  timezone?: string;
+  industry?: string;
+  sector?: string;
+  size?: string;
+  revenue?: number;
+  employeeCount?: number;
+  foundedYear?: number;
+  tickerSymbol?: string;
+  isPublic: boolean;
+  isActive: boolean;
+  prospectAssignment?: string;
+  prospectReengagement?: string;
+  notes?: string;
+  tags: string[];
+  lastActivityDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  parentCompanyId?: string;
+  ownerId: string;
+}
+
+export interface Deal {
+  id: string;
+  title: string;
+  description?: string;
+  value: number;
+  currency: string;
+  probability: number;
+  stage: string;
+  expectedCloseDate?: Date;
+  actualCloseDate?: Date;
+  closeReason?: string;
+  lossReason?: string;
+  competitors: string[];
+  risks?: string;
+  notes?: string;
+  tags: string[];
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  companyId: string;
+  primaryContactId?: string;
+  ownerId: string;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  type: string;
+  priority: string;
+  status: string;
+  dueDate?: Date;
+  startDate?: Date;
+  completedAt?: Date;
+  estimatedDuration?: number;
+  actualDuration?: number;
+  notes?: string;
+  metadata?: any;
+  createdAt: Date;
+  updatedAt: Date;
+  assigneeId?: string;
+  creatorId: string;
+  contactId?: string;
+  dealId?: string;
+  companyId?: string;
+}

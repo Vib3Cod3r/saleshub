@@ -1,0 +1,423 @@
+// AI-Driven CRM Sales and Marketing Database Schema
+// Simplified schema for SalesHub CRM with core functionality
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE USER MANAGEMENT
+// ============================================================================
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  password          String
+  firstName         String
+  lastName          String
+  middleName        String?
+  jobTitle          String?
+  department        String?
+  phone             String?
+  mobile            String?
+  avatar            String?
+  timezone          String?
+  locale            String?
+  isActive          Boolean  @default(true)
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  role              UserRole @relation(fields: [roleId], references: [id])
+  roleId            String
+  
+  // Owned entities
+  ownedCompanies    Company[] @relation("CompanyOwner")
+  ownedContacts     Contact[] @relation("ContactOwner")
+  ownedLeads        Lead[] @relation("LeadOwner")
+  ownedDeals        Deal[] @relation("DealOwner")
+  createdTasks      Task[] @relation("TaskCreator")
+  
+  // Assigned tasks
+  assignedTasks     Task[] @relation("TaskAssignee")
+  
+  // Created notes
+  createdNotes      Note[] @relation("NoteCreator")
+  
+  @@map("users")
+}
+
+model UserRole {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  permissions Json     // Store permissions as JSON for flexibility
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  users       User[]
+  
+  @@map("user_roles")
+}
+
+// ============================================================================
+// CONTACT & COMPANY MANAGEMENT
+// ============================================================================
+
+model Contact {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String
+  middleName        String?
+  preferredName     String?
+  email             String?  @unique
+  emailVerified     Boolean  @default(false)
+  phone             String?
+  mobile            String?
+  workPhone         String?
+  fax               String?
+  website           String?
+  jobTitle          String?
+  department        String?
+  isDecisionMaker   Boolean  @default(false)
+  gender            Gender?
+  birthday          DateTime?
+  spouseName        String?
+  childrenNames     String?  // JSON array of names
+  address           String?
+  address2          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  timezone          String?
+  language          String?
+  leadSource        LeadSource?
+  leadStatus        LeadStatus @default(NEW)
+  leadScore         Int?     @default(0)
+  notes             String?
+  tags              String[] // Array of tags
+  lastContactDate   DateTime?
+  lastActivityDate  DateTime?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  companyId         String?
+  company           Company? @relation(fields: [companyId], references: [id])
+  ownerId           String?
+  owner             User?    @relation("ContactOwner", fields: [ownerId], references: [id])
+  
+  // Related entities
+  deals             Deal[]
+  tasks             Task[]
+  contactNotes      Note[] @relation("ContactNotes")
+  convertedFromLeads Lead[] @relation("LeadToContact")
+  
+  @@map("contacts")
+}
+
+model Company {
+  id                String   @id @default(cuid())
+  name              String
+  legalName         String?
+  dba               String?  // Doing Business As
+  website           String?
+  phone             String?
+  fax               String?
+  email             String?
+  address           String?
+  address2          String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  latitude          Float?
+  longitude         Float?
+  timezone          String?
+  industry          String?
+  sector            String?
+  size              CompanySize?
+  revenue           Float?
+  employeeCount     Int?
+  foundedYear       Int?
+  tickerSymbol      String?
+  isPublic          Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  prospectAssignment String? // AI-derived assignment code
+  prospectReengagement String? // AI-derived re-engagement code
+  notes             String?
+  tags              String[]
+  lastActivityDate  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  parentCompanyId   String?
+  parentCompany     Company? @relation("CompanyHierarchy", fields: [parentCompanyId], references: [id])
+  subsidiaries      Company[] @relation("CompanyHierarchy")
+  ownerId           String
+  owner             User     @relation("CompanyOwner", fields: [ownerId], references: [id])
+  
+  // Related entities
+  contacts          Contact[]
+  deals             Deal[]
+  tasks             Task[]
+  convertedFromLeads Lead[] @relation("LeadToCompany")
+  
+  @@map("companies")
+}
+
+// ============================================================================
+// LEAD MANAGEMENT
+// ============================================================================
+
+model Lead {
+  id                String   @id @default(cuid())
+  firstName         String
+  lastName          String
+  email             String
+  phone             String?
+  company           String?
+  jobTitle          String?
+  website           String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  country           String?
+  source            LeadSource
+  sourceDetails     String?  // Specific campaign, event, etc.
+  leadScore         Int      @default(0)
+  status            LeadStatus @default(NEW)
+  assignedToId      String?
+  notes             String?
+  tags              String[]
+  isConverted       Boolean  @default(false)
+  convertedToContactId String?
+  convertedToCompanyId String?
+  convertedAt       DateTime?
+  lastActivityDate  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  assignedTo        User?    @relation("LeadOwner", fields: [assignedToId], references: [id])
+  convertedToContact Contact? @relation("LeadToContact", fields: [convertedToContactId], references: [id])
+  convertedToCompany Company? @relation("LeadToCompany", fields: [convertedToCompanyId], references: [id])
+  
+  // Related entities
+  tasks             Task[]
+  
+  @@map("leads")
+}
+
+// ============================================================================
+// DEAL & OPPORTUNITY MANAGEMENT
+// ============================================================================
+
+model Deal {
+  id                String   @id @default(cuid())
+  title             String
+  description       String?
+  value             Float
+  currency          String   @default("USD")
+  probability       Int      @default(0) // 0-100
+  stage             DealStage @default(PROSPECTING)
+  expectedCloseDate DateTime?
+  actualCloseDate   DateTime?
+  closeReason       String?
+  lossReason        String?
+  competitors       String[] // Array of competitor names
+  risks             String?  // Identified risks
+  notes             String?
+  tags              String[]
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  primaryContactId  String?
+  primaryContact    Contact? @relation(fields: [primaryContactId], references: [id])
+  ownerId           String
+  owner             User     @relation("DealOwner", fields: [ownerId], references: [id])
+  
+  // Related entities
+  tasks             Task[]
+  dealNotes         Note[] @relation("DealNotes")
+  
+  @@map("deals")
+}
+
+// ============================================================================
+// TASK MANAGEMENT
+// ============================================================================
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  type        TaskType
+  priority    Priority @default(MEDIUM)
+  status      TaskStatus @default(PENDING)
+  dueDate     DateTime?
+  startDate   DateTime?
+  completedAt DateTime?
+  estimatedDuration Int? // In minutes
+  actualDuration Int?   // In minutes
+  notes       String?
+  metadata    Json?     // Additional task data
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  assigneeId  String?
+  assignee    User?     @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creatorId   String
+  creator     User      @relation("TaskCreator", fields: [creatorId], references: [id])
+  contactId   String?
+  contact     Contact?  @relation(fields: [contactId], references: [id])
+  dealId      String?
+  deal        Deal?     @relation(fields: [dealId], references: [id])
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id])
+  leadId      String?
+  lead        Lead?     @relation(fields: [leadId], references: [id])
+  
+  @@map("tasks")
+}
+
+// ============================================================================
+// NOTES
+// ============================================================================
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String?
+  content     String
+  type        NoteType @default(GENERAL)
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  creatorId   String
+  creator     User     @relation("NoteCreator", fields: [creatorId], references: [id])
+  contactId   String?
+  contact     Contact? @relation("ContactNotes", fields: [contactId], references: [id])
+  dealId      String?
+  deal        Deal?    @relation("DealNotes", fields: [dealId], references: [id])
+  
+  @@map("notes")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum LeadSource {
+  WEBSITE
+  EMAIL_CAMPAIGN
+  SOCIAL_MEDIA
+  REFERRAL
+  COLD_CALL
+  TRADE_SHOW
+  WEBINAR
+  ADVERTISEMENT
+  PARTNER
+  EVENT
+  PAID_SEARCH
+  ORGANIC_SEARCH
+  DIRECT_MAIL
+  TELEMARKETING
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFIED
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  CONVERTED
+  DEAD
+  NURTURING
+}
+
+enum CompanySize {
+  MICRO_1_10
+  SMALL_11_50
+  MEDIUM_51_200
+  LARGE_201_1000
+  ENTERPRISE_1000_PLUS
+}
+
+enum DealStage {
+  PROSPECTING
+  QUALIFYING
+  PROPOSING
+  NEGOTIATING
+  FOLLOW_UP
+  CLOSED_WON
+  CLOSED_LOST
+  ON_HOLD
+}
+
+enum TaskType {
+  CALL
+  EMAIL
+  MEETING
+  FOLLOW_UP
+  DEMO
+  PROPOSAL
+  CONTRACT
+  RESEARCH
+  CONTENT_CREATION
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DEFERRED
+}
+
+enum NoteType {
+  GENERAL
+  MEETING_NOTES
+  CALL_NOTES
+  RESEARCH_NOTES
+  TASK_NOTES
+  OTHER
+}
