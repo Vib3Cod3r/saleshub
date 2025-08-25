@@ -146,6 +146,16 @@ cd backend
 go run cmd/migrate/main.go
 ```
 
+### 🎯 Development Standards
+
+**Before writing code, always check the [DRY Rules](DRY_RULES.md):**
+
+- Follow the established patterns in `backend/lib/` utilities
+- Use constants instead of magic numbers
+- Implement consistent error handling and logging
+- Separate business logic from HTTP handlers
+- Write testable, maintainable code
+
 ## 📝 API Documentation
 
 The backend provides RESTful APIs for all CRM functionality:
@@ -166,6 +176,22 @@ The backend provides RESTful APIs for all CRM functionality:
 4. Add tests
 5. Submit a pull request
 
+## 📚 Documentation
+
+For comprehensive documentation, see **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** which includes:
+
+- **Architecture & Development**: DRY refactoring, folder structure, CRM analysis
+- **Code Quality & Standards**: Anti-bloat rules, ESLint configuration
+- **Database & Schema**: Complete schema documentation
+- **Error Tracking & Monitoring**: Error tracking systems
+- **Deployment & Operations**: Docker, scripts, configuration
+
+### 🎯 Development Standards
+
+- **[DRY Rules](DRY_RULES.md)** - Comprehensive DRY principles and coding standards
+- **Code Review Guidelines** - See DRY_RULES.md for code review checklist
+- **Best Practices** - Follow the patterns established in the utility files
+
 ## 📄 License
 
 This project is licensed under the MIT License.
@@ -173,4 +199,3 @@ This project is licensed under the MIT License.
 ## 🆘 Support
 
 For support and questions, please open an issue in the repository.
-=======

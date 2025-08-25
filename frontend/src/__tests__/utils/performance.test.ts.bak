@@ -1,0 +1,338 @@
+import { render, screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { AuthProvider } from '../../../contexts/AuthContext'
+import DashboardPage from '../../../app/dashboard/page'
+import ContactsPage from '../../../app/contacts/page'
+
+// Performance testing utilities
+export const measurePerformance = async (name: string, fn: () => Promise<void>) => {
+  const start = performance.now()
+  await fn()
+  const end = performance.now()
+  
+  const duration = end - start
+  console.log(`${name}: ${duration.toFixed(2)}ms`)
+  
+  return duration
+}
+
+export const measureRenderTime = async (component: React.ReactElement) => {
+  const start = performance.now()
+  
+  const { unmount } = render(component)
+  
+  const end = performance.now()
+  const renderTime = end - start
+  
+  unmount()
+  
+  return renderTime
+}
+
+export const measureMemoryUsage = () => {
+  if ('memory' in performance) {
+    const memory = (performance as Performance & { memory: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory
+    return {
+      used: memory.usedJSHeapSize,
+      total: memory.totalJSHeapSize,
+      limit: memory.jsHeapSizeLimit,
+    }
+  }
+  return null
+}
+
+export const measureNetworkRequests = async (page: any) => {
+  const requests: any[] = []
+  
+  page.on('request', (request: any) => {
+    requests.push({
+      url: request.url(),
+      method: request.method(),
+      timestamp: Date.now(),
+    })
+  })
+  
+  return requests
+}
+
+describe('Performance Tests', () => {
+  let queryClient: QueryClient
+
+  beforeEach(() => {
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    })
+  })
+
+  afterEach(() => {
+    queryClient.clear()
+  })
+
+  const renderWithProviders = (component: React.ReactElement) => {
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>{component}</AuthProvider>
+      </QueryClientProvider>
+    )
+  }
+
+  describe('Dashboard Performance', () => {
+    it('should load dashboard within 2 seconds', async () => {
+      const duration = await measurePerformance('Dashboard Load', async () => {
+        renderWithProviders(<DashboardPage />)
+        
+        await waitFor(() => {
+          expect(screen.getByText(/dashboard/i)).toBeInTheDocument()
+        })
+      })
+
+      // Should load within 2 seconds
+      expect(duration).toBeLessThan(2000)
+    })
+
+    it('should render dashboard components efficiently', async () => {
+      const renderTime = await measureRenderTime(
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <DashboardPage />
+          </AuthProvider>
+        </QueryClientProvider>
+      )
+
+      // Should render within 500ms
+      expect(renderTime).toBeLessThan(500)
+    })
+
+    it('should handle memory usage efficiently', () => {
+      const initialMemory = measureMemoryUsage()
+      
+      if (initialMemory) {
+        // Render multiple components
+        for (let i = 0; i < 10; i++) {
+          const { unmount } = renderWithProviders(<DashboardPage />)
+          unmount()
+        }
+        
+        const finalMemory = measureMemoryUsage()
+        
+        if (finalMemory && initialMemory) {
+          const memoryIncrease = finalMemory.used - initialMemory.used
+          
+          // Memory increase should be reasonable (less than 10MB)
+          expect(memoryIncrease).toBeLessThan(10 * 1024 * 1024)
+        }
+      }
+    })
+  })
+
+  describe('Contacts Page Performance', () => {
+    it('should load contacts page within 1.5 seconds', async () => {
+      const duration = await measurePerformance('Contacts Page Load', async () => {
+        renderWithProviders(<ContactsPage />)
+        
+        await waitFor(() => {
+          expect(screen.getByText(/contacts/i)).toBeInTheDocument()
+        })
+      })
+
+      // Should load within 1.5 seconds
+      expect(duration).toBeLessThan(1500)
+    })
+
+    it('should handle large contact lists efficiently', async () => {
+      const largeContactList = Array.from({ length: 1000 }, (_, i) => ({
+        id: `contact-${i}`,
+        firstName: `Contact ${i}`,
+        lastName: 'Test',
+        email: `contact${i}@example.com`,
+      }))
+
+      const duration = await measurePerformance('Large Contact List Render', async () => {
+        // Mock large dataset
+        jest.doMock('../../../hooks/api/useApi', () => ({
+          useContacts: () => ({
+            data: largeContactList,
+            isLoading: false,
+            error: null,
+          }),
+        }))
+
+        renderWithProviders(<ContactsPage />)
+        
+        await waitFor(() => {
+          expect(screen.getByText('Contact 0')).toBeInTheDocument()
+        })
+      })
+
+      // Should handle large lists within 3 seconds
+      expect(duration).toBeLessThan(3000)
+    })
+  })
+
+  describe('Search Performance', () => {
+    it('should perform search within 500ms', async () => {
+      const duration = await measurePerformance('Contact Search', async () => {
+        renderWithProviders(<ContactsPage />)
+        
+        const searchInput = screen.getByPlaceholderText(/search contacts/i)
+        searchInput.setAttribute('value', 'test search')
+        
+        // Trigger search
+        const event = new Event('input', { bubbles: true })
+        searchInput.dispatchEvent(event)
+        
+        await waitFor(() => {
+          // Search results should be filtered
+          expect(screen.queryByText('Unrelated Contact')).not.toBeInTheDocument()
+        })
+      })
+
+      // Should search within 500ms
+      expect(duration).toBeLessThan(500)
+    })
+  })
+
+  describe('Modal Performance', () => {
+    it('should open modals within 200ms', async () => {
+      renderWithProviders(<ContactsPage />)
+      
+      const duration = await measurePerformance('Modal Open', async () => {
+        const addButton = screen.getByRole('button', { name: /add contact/i })
+        addButton.click()
+        
+        await waitFor(() => {
+          expect(screen.getByText(/create contact/i)).toBeInTheDocument()
+        })
+      })
+
+      // Should open modal within 200ms
+      expect(duration).toBeLessThan(200)
+    })
+  })
+
+  describe('Form Performance', () => {
+    it('should validate forms efficiently', async () => {
+      renderWithProviders(<ContactsPage />)
+      
+      const addButton = screen.getByRole('button', { name: /add contact/i })
+      addButton.click()
+      
+      await waitFor(() => {
+        expect(screen.getByText(/create contact/i)).toBeInTheDocument()
+      })
+      
+      const duration = await measurePerformance('Form Validation', async () => {
+        const createButton = screen.getByRole('button', { name: /create/i })
+        createButton.click()
+        
+        await waitFor(() => {
+          expect(screen.getByText(/first name is required/i)).toBeInTheDocument()
+        })
+      })
+
+      // Should validate within 100ms
+      expect(duration).toBeLessThan(100)
+    })
+  })
+
+  describe('Real-time Updates Performance', () => {
+    it('should handle real-time updates efficiently', async () => {
+      const duration = await measurePerformance('Real-time Update', async () => {
+        renderWithProviders(<DashboardPage />)
+        
+        // Simulate real-time update
+        await waitFor(() => {
+          expect(screen.getByText(/dashboard/i)).toBeInTheDocument()
+        })
+        
+        // Trigger real-time update
+        const updateEvent = new CustomEvent('realtime-update', {
+          detail: { type: 'contact_created', data: { id: '1', name: 'New Contact' } }
+        })
+        window.dispatchEvent(updateEvent)
+        
+        await waitFor(() => {
+          // Should update efficiently
+          expect(screen.getByText(/new contact/i)).toBeInTheDocument()
+        })
+      })
+
+      // Should update within 300ms
+      expect(duration).toBeLessThan(300)
+    })
+  })
+
+  describe('Export Performance', () => {
+    it('should export data efficiently', async () => {
+      const duration = await measurePerformance('Data Export', async () => {
+        renderWithProviders(<ContactsPage />)
+        
+        const exportButton = screen.getByRole('button', { name: /export/i })
+        exportButton.click()
+        
+        await waitFor(() => {
+          expect(screen.getByText(/export data/i)).toBeInTheDocument()
+        })
+        
+        const exportDataButton = screen.getByRole('button', { name: /export data/i })
+        exportDataButton.click()
+        
+        await waitFor(() => {
+          expect(screen.getByText(/export completed/i)).toBeInTheDocument()
+        })
+      })
+
+      // Should export within 1 second
+      expect(duration).toBeLessThan(1000)
+    })
+  })
+
+  describe('Navigation Performance', () => {
+    it('should navigate between pages efficiently', async () => {
+      const duration = await measurePerformance('Page Navigation', async () => {
+        renderWithProviders(<DashboardPage />)
+        
+        await waitFor(() => {
+          expect(screen.getByText(/dashboard/i)).toBeInTheDocument()
+        })
+        
+        // Navigate to contacts
+        const contactsLink = screen.getByRole('link', { name: /contacts/i })
+        contactsLink.click()
+        
+        await waitFor(() => {
+          expect(screen.getByText(/contacts/i)).toBeInTheDocument()
+        })
+      })
+
+      // Should navigate within 1 second
+      expect(duration).toBeLessThan(1000)
+    })
+  })
+
+  describe('Memory Leak Prevention', () => {
+    it('should not leak memory during component lifecycle', () => {
+      const initialMemory = measureMemoryUsage()
+      
+      if (initialMemory) {
+        // Render and unmount components multiple times
+        for (let i = 0; i < 50; i++) {
+          const { unmount } = renderWithProviders(<DashboardPage />)
+          unmount()
+        }
+        
+        const finalMemory = measureMemoryUsage()
+        
+        if (finalMemory && initialMemory) {
+          const memoryIncrease = finalMemory.used - initialMemory.used
+          
+          // Memory increase should be minimal (less than 5MB)
+          expect(memoryIncrease).toBeLessThan(5 * 1024 * 1024)
+        }
+      }
+    })
+  })
+})

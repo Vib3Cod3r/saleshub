@@ -80,3 +80,29 @@ go.work
 *.tmp
 *.temp
 saleshub-server
+
+# Build artifacts
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Database dumps
+*.sql
+database_dump_*.sql
+sales_crm_database_*.zip
+sales_crm_database_*/
+
+# Documentation duplicates
+*_SUMMARY.md
+*_PROGRESS_*.md
+*_RULES.md
+*_LOG.md
+*_TROUBLESHOOTING.md
+ERROR_LOG.md
+README.md.old
+
+# Auto-generated files
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo

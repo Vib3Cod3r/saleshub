@@ -1,55 +1,56 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# Use Node.js 20 Alpine as base image
+FROM node:20-alpine AS base
 
-# Set working directory
+# Install dependencies only when needed
+FROM base AS deps
+# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install git and ca-certificates
-RUN apk add --no-cache git ca-certificates
+# Install dependencies based on the preferred package manager
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
 
-# Copy go mod files
-COPY go.mod go.sum ./
-
-# Download dependencies
-RUN go mod download
-
-# Copy source code
+# Rebuild the source code only when needed
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Generate Prisma client
+RUN npx prisma generate
+
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
+RUN npm run build
 
-# Final stage
-FROM alpine:latest
+# Production image, copy all the files and run the app
+FROM base AS runner
+WORKDIR /app
 
-# Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+ENV NODE_ENV=production
 
-# Create non-root user
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+# Create a non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
 
-# Set working directory
-WORKDIR /root/
+# Copy the built application
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/prisma ./prisma
 
-# Copy the binary from builder stage
-COPY --from=builder /app/main .
-
-# Copy environment file
-COPY --from=builder /app/env.example .env
-
-# Change ownership to non-root user
-RUN chown -R appuser:appgroup /root/
+# Change ownership of the app directory
+RUN chown -R nodejs:nodejs /app
 
 # Switch to non-root user
-USER appuser
+USER nodejs
 
 # Expose port
 EXPOSE 8089
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8089/health || exit 1
+  CMD node -e "require('http').get('http://localhost:8089/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-# Run the application
-CMD ["./main"]
+# Start the application
+CMD ["node", "dist/index.js"]
